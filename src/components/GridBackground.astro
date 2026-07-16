@@ -1,0 +1,248 @@
+---
+// Animated grid background.
+// - Grid lines are drawn with CSS gradients (crisp, infinite, zero DOM).
+// - A few cells fade in/out at random positions via a tiny script (organic, never loops).
+// - A soft radial glow in the center adds depth.
+//
+// Tune with props:
+interface Props {
+  /** Cell size in px. */
+  cell?: number;
+  /** Number of figures (clusters) alive at once. */
+  clusters?: number;
+}
+
+const { cell = 56, clusters = 5 } = Astro.props;
+---
+
+<div class="grid-bg -z-1" aria-hidden="true" data-cell={cell} data-clusters={clusters}>
+  <div class="grid-bg__cells"></div>
+</div>
+
+<style define:vars={{ cell: `${cell}px` }}>
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-color: #ffffff;
+    /* Two thin lines = the grid. */
+    background-image:
+      linear-gradient(to right, #e2e2ec 1px, transparent 1px),
+      linear-gradient(to bottom, #e2e2ec 1px, transparent 1px);
+    background-size: var(--cell) var(--cell);
+    overflow: hidden;
+  }
+
+  /* Soft glow in the center. */
+  .grid-bg::before {
+    content: "";
+    position: absolute;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70%;
+    height: 60%;
+    background: radial-gradient(
+      ellipse 55% 45% at 50% 42%,
+      #5e59e25d,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .grid-bg__cells {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* A single highlighted cell, positioned + sized by JS. */
+  .grid-bg__cells :global(.cell) {
+    position: absolute;
+    width: var(--cell);
+    height: var(--cell);
+    background: #e2e2ec;
+    opacity: 0;
+    transition: opacity 2s ease-in-out;
+    will-change: opacity;
+  }
+
+  .grid-bg__cells :global(.cell.on) {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .grid-bg__cells :global(.cell) {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  function initGridBackground() {
+    const root = document.querySelector<HTMLElement>(".grid-bg");
+    const layer = root?.querySelector<HTMLElement>(".grid-bg__cells");
+    if (!root || !layer) return;
+
+    const cell = Number(root.dataset.cell) || 56;
+    const clusterCount = Number(root.dataset.clusters) || 5;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Figures, expressed as [col, row] offsets of adjacent cells.
+    const SHAPES: number[][][] = [
+      [[0, 0]], // single
+      [[0, 0], [1, 0]], // domino
+      [[0, 0], [1, 0], [1, 1]], // L (corner)
+      [[0, 0], [0, 1], [1, 1]], // L (corner)
+      [[0, 0], [1, 0], [0, 1], [1, 1]], // 2x2 block
+      [[1, 0], [0, 1], [1, 1], [2, 1], [1, 2]], // plus
+      [[0, 0], [0, 1], [0, 2], [1, 2]], // J
+      [[0, 0], [1, 0], [1, 1], [2, 1]], // S / zig-zag
+      [[0, 0], [0, 1], [1, 1], [1, 2]], // T-ish (like the image)
+    ];
+
+    let cols = 0;
+    let rows = 0;
+
+    function measure() {
+      cols = Math.ceil(window.innerWidth / cell);
+      rows = Math.ceil(window.innerHeight / cell);
+    }
+
+    function pick<T>(arr: T[]): T {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // Cells currently taken by any figure, plus which cells each container holds
+    // (so we can free them when the figure fades out).
+    const occupied = new Set<string>();
+    const claimed = new WeakMap<HTMLElement, string[]>();
+
+    function release(container: HTMLElement) {
+      const keys = claimed.get(container);
+      if (keys) for (const k of keys) occupied.delete(k);
+      claimed.delete(container);
+    }
+
+    // A placement fits if neither its cells nor their 8 neighbors are occupied,
+    // which guarantees at least a one-cell gap between figures (they never touch).
+    function fits(shape: number[][], baseCol: number, baseRow: number) {
+      for (const [dc, dr] of shape) {
+        const c = baseCol + dc;
+        const r = baseRow + dr;
+        for (let nc = c - 1; nc <= c + 1; nc++) {
+          for (let nr = r - 1; nr <= r + 1; nr++) {
+            if (occupied.has(nc + "," + nr)) return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    // Lay out a random figure in a free spot. Returns true if it found one.
+    function buildFigure(container: HTMLElement) {
+      release(container);
+      container.replaceChildren();
+      const shape = pick(SHAPES);
+      const maxCol = Math.max(...shape.map((c) => c[0]));
+      const maxRow = Math.max(...shape.map((c) => c[1]));
+
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const baseCol = Math.floor(Math.random() * Math.max(1, cols - maxCol));
+        const baseRow = Math.floor(Math.random() * Math.max(1, rows - maxRow));
+        if (!fits(shape, baseCol, baseRow)) continue;
+
+        const keys: string[] = [];
+        for (const [dc, dr] of shape) {
+          const c = baseCol + dc;
+          const r = baseRow + dr;
+          keys.push(c + "," + r);
+          const el = document.createElement("div");
+          el.className = "cell";
+          el.style.transform = `translate(${c * cell}px, ${r * cell}px)`;
+          container.appendChild(el);
+        }
+        for (const k of keys) occupied.add(k);
+        claimed.set(container, keys);
+        return true;
+      }
+      return false; // no free spot right now
+    }
+
+    function setOn(container: HTMLElement, on: boolean) {
+      for (const el of container.children) {
+        el.classList.toggle("on", on);
+      }
+    }
+
+    const FADE = 2000; // keep in sync with the .cell opacity transition
+    const MIN_VISIBLE = Math.min(3, clusterCount); // always keep at least this many on screen
+    let visible = 0;
+
+    // Try to fade a figure out, but never drop below the minimum visible count.
+    function tryHide(container: HTMLElement) {
+      if (visible <= MIN_VISIBLE) {
+        // Hiding now would leave too few on screen — stay visible, check again soon.
+        window.setTimeout(() => tryHide(container), 600 + Math.random() * 1200);
+        return;
+      }
+      visible--;
+      setOn(container, false);
+      // Free the cells only once the fade-out has finished, so a new figure
+      // can't move in while this one is still visible.
+      window.setTimeout(() => {
+        release(container);
+        const gap = 1000 + Math.random() * 2500; // hidden time before reappearing
+        window.setTimeout(() => cycle(container), gap);
+      }, FADE);
+    }
+
+    // Cycle: build a figure, fade it in together, hold, then try to fade out.
+    function cycle(container: HTMLElement) {
+      if (!buildFigure(container)) {
+        // No free spot — wait a bit and try again.
+        window.setTimeout(() => cycle(container), 600 + Math.random() * 1200);
+        return;
+      }
+      // Commit the initial opacity:0 state (reflow) so the fade-in actually animates
+      // instead of snapping straight to full opacity.
+      void container.offsetWidth;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        setOn(container, true);
+        visible++;
+        const hold = 2000 + Math.random() * 3500; // visible time
+        window.setTimeout(() => tryHide(container), hold);
+      }));
+    }
+
+    measure();
+
+    if (reduce) {
+      // Static scatter of figures, no animation.
+      for (let i = 0; i < clusterCount; i++) {
+        const group = document.createElement("div");
+        layer.appendChild(group);
+        buildFigure(group);
+        setOn(group, true);
+      }
+      return;
+    }
+
+    for (let i = 0; i < clusterCount; i++) {
+      const group = document.createElement("div");
+      layer.appendChild(group);
+      // Stagger the start so figures don't pulse in unison.
+      window.setTimeout(() => cycle(group), Math.random() * 5000);
+    }
+
+    let resizeTimer: number;
+    window.addEventListener("resize", () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(measure, 200);
+    });
+  }
+
+  initGridBackground();
+  // Re-init on Astro view transitions, if used.
+  document.addEventListener("astro:after-swap", initGridBackground);
+</script>

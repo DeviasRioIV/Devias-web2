@@ -1,0 +1,29 @@
+{
+  "header": {
+    "menu": "Menú"
+  },
+  "hero": {
+    "title": "Business first",
+    "subtitle": "Code second",
+    "description": "Ordenamos tus operaciones antes de que el crecimiento se convierta en caos",
+    "ctaEvaluate": "Evaluar<br>mi operación",
+    "ctaHowItWorks": "Ver<br>cómo funciona"
+  },
+  "scale": {
+    "intro": "Empezar con un Excel y procesos informales fue, en su momento, <b>la decisión correcta</b>. El problema aparece cuando esa misma lógica sigue ahí mientras la empresa crece.",
+    "hint": "arrastrá para ver qué pasa cuando tu empresa crece →",
+    "company": "tu empresa",
+    "system": "tu sistema",
+    "pins": ["Retrabajo", "Errores nuevos", "Decisiones lentas", "Pérdida de control"],
+    "cta": "Quiero un sistema escalable →"
+  },
+  "errorWindows": {
+    "windows": [
+      "Horas de tu equipo (y las tuyas) perdidas en tareas que deberían ser automáticas",
+      "Decisiones importantes tomadas con información incompleta o atrasada",
+      "Oportunidades de crecimiento que no perseguís porque \"primero hay que ordenar la casa\"",
+      "Clientes que notan los errores antes que vos",
+      "Cada mes que pasa, el problema se vuelve más caro de resolver"
+    ]
+  }
+}

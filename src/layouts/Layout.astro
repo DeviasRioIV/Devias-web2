@@ -1,14 +1,26 @@
+---
+import { Font } from "astro:assets";
+import "../styles/global.css";
+import Header from '../components/Header.astro';
+const { lang = "es", t } = Astro.props;
+---
+
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<Font cssVariable="--univia-pro-regular" preload />
+		<Font cssVariable="--univia-pro-ultra" preload />
+		<Font cssVariable="--roboto-mono" preload />
+		<Font cssVariable="--roboto" preload />
+		<title>Devias</title>
 	</head>
 	<body>
+		<Header lang={lang} t={t.header} />
 		<slot />
 	</body>
 </html>

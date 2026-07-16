@@ -1,0 +1,29 @@
+{
+  "header": {
+    "menu": "Menu"
+  },
+  "hero": {
+    "title": "Business first",
+    "subtitle": "Code second",
+    "description": "We organize your operations before growth turns into chaos",
+    "ctaEvaluate": "Assess<br>my operation",
+    "ctaHowItWorks": "See<br>how it works"
+  },
+  "scale": {
+    "intro": "Starting with a spreadsheet and informal processes was, at the time, <b>the right call</b>. The problem shows up when that same logic sticks around as the company grows.",
+    "hint": "drag to see what happens as your company grows →",
+    "company": "your company",
+    "system": "your system",
+    "pins": ["Rework", "New errors", "Slow decisions", "Loss of control"],
+    "cta": "I want a scalable system →"
+  },
+  "errorWindows": {
+    "windows": [
+      "Your team's hours (and yours) lost on tasks that should be automatic",
+      "Important decisions made with incomplete or outdated information",
+      "Growth opportunities you don't chase because \"we need to get our house in order first\"",
+      "Customers who notice the errors before you do",
+      "Every month that passes, the problem gets more expensive to fix"
+    ]
+  }
+}

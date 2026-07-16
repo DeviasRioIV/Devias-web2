@@ -1,0 +1,214 @@
+---
+// Animated "error windows" block.
+//
+// A stage with an animated dithered-blob background and a stack of retro error
+// windows. The windows bounce in when the block scrolls into view, can be
+// dragged around by their title bar, and jump to the front when touched.
+//
+// Behaviour lives in ./errorWindows.ts; this file is markup + styling.
+import { AlertTriangle } from "@lucide/astro";
+
+interface Props {
+  /** One message per window, in stacking order (bottom to top). */
+  t: { windows: string[] };
+}
+
+const { t } = Astro.props;
+
+// Fixed layout for each window: position + size (as % of the stage) and the
+// stagger delay for its entrance. Paired with the messages from i18n.
+const LAYOUT = [
+  { left: 0, top: 2.5, width: 65, delay: 0.05 },
+  { left: 33, top: 24, width: 64, delay: 0.35 },
+  { left: 6, top: 43, width: 66, delay: 0.65 },
+  { left: 31, top: 65, width: 62, delay: 0.95 },
+  { left: 15, top: 81, width: 64, delay: 1.25 },
+];
+
+const windows = LAYOUT.map((layout, i) => ({ ...layout, message: t.windows[i] }));
+---
+
+<div class="error-windows h-screen" data-error-windows>
+  <div class="stage" data-stage>
+    <canvas class="stage__blobs w-full" data-blob-canvas aria-hidden="true"></canvas>
+
+    {
+      windows.map((win, i) => (
+        <div
+          class="window"
+          style={`left:${win.left}%; top:${win.top}%; width:${win.width}%; z-index:${i + 1}; --appear-delay:${win.delay}s;`}
+        >
+          <div class="window__bar">
+            <AlertTriangle class="window__icon" size={18} aria-hidden="true" />
+            <div class="window__controls" aria-hidden="true">
+              <span class="window__min">–</span>
+              <span class="window__box" />
+              <span class="window__close">×</span>
+            </div>
+          </div>
+          <div class="window__body">
+            <p>{win.message}</p>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .error-windows {
+    --ink: var(--color-primary, #00006c);
+    --accent: var(--color-secondary, #00c800);
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 20px 50px -20px rgba(0, 0, 108, 0.25);
+    container-type: inline-size;
+  }
+
+  .stage__blobs {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* --- Windows ----------------------------------------------------------- */
+
+  .window {
+    position: absolute;
+    box-sizing: border-box;
+    background: #fff;
+    border: 2px solid var(--ink);
+    box-shadow: 0 18px 34px -16px rgba(0, 0, 108, 0.35);
+    touch-action: none;
+    /* Hidden until the block scrolls into view (see .is-visible below). */
+    opacity: 0;
+  }
+
+  .window__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(6px, 2cqw, 10px) clamp(10px, 3cqw, 16px);
+    border-bottom: 2px solid var(--ink);
+    cursor: move;
+    user-select: none;
+  }
+
+  .window__icon {
+    flex-shrink: 0;
+    color: var(--accent);
+  }
+
+  .window__controls {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 2.4cqw, 14px);
+    color: var(--ink);
+    font-family: var(--font-roboto-mono, monospace);
+  }
+
+  .window__min,
+  .window__close {
+    font-size: clamp(14px, 3.6cqw, 18px);
+    line-height: 1;
+  }
+
+  .window__box {
+    width: 12px;
+    height: 12px;
+    border: 1.4px solid var(--ink);
+    display: inline-block;
+  }
+
+  .window__body {
+    padding: clamp(16px, 5cqw, 28px);
+  }
+
+  .window__body p {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--font-roboto-mono, monospace);
+    font-size: clamp(14px, 4.2cqw, 19px);
+    line-height: 1.5;
+  }
+
+  /* --- Entrance animation ------------------------------------------------ */
+
+  @keyframes window-appear {
+    0% { opacity: 0; transform: scale(0.35) translateY(26px) rotate(-5deg); }
+    45% { opacity: 1; transform: scale(1.06) translateY(-6px) rotate(1.5deg); }
+    65% { transform: scale(0.965) translateY(2px) rotate(-1deg); }
+    82% { transform: scale(1.015) translateY(-1px) rotate(0.4deg); }
+    100% { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
+  }
+
+  .error-windows.is-visible .window {
+    animation: window-appear 0.62s cubic-bezier(0.2, 0.9, 0.35, 1.15) both;
+    animation-delay: var(--appear-delay, 0s);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .window {
+      opacity: 1;
+    }
+    .error-windows.is-visible .window {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  import { createBlobField, initDraggableWindows } from "./errorWindows";
+
+  function initErrorWindows(root: HTMLElement) {
+    const stage = root.querySelector<HTMLElement>("[data-stage]");
+    const canvas = root.querySelector<HTMLCanvasElement>("[data-blob-canvas]");
+    if (!stage || !canvas) return;
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const field = createBlobField(canvas, stage);
+    const cleanupDrag = initDraggableWindows(stage);
+
+    // Play the entrance + blobs when in view, pause the canvas when out.
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            root.classList.add("is-visible");
+            if (!reduce) field.play();
+          } else {
+            field.pause();
+          }
+        }
+      },
+      { threshold: 0.2 },
+    );
+    io.observe(stage);
+
+    document.addEventListener("astro:before-swap", () => {
+      io.disconnect();
+      field.destroy();
+      cleanupDrag();
+    }, { once: true });
+  }
+
+  function initAll() {
+    document
+      .querySelectorAll<HTMLElement>("[data-error-windows]")
+      .forEach(initErrorWindows);
+  }
+
+  initAll();
+  document.addEventListener("astro:after-swap", initAll);
+</script>

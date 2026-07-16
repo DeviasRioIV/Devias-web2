@@ -1,0 +1,431 @@
+---
+// Draggable "scale curve" chart.
+//
+// A range slider drives two lines: your company's workload (straight, blue,
+// climbing) vs. a system that keeps it under control (green, plateauing).
+// As you drag, warning pins appear where the two diverge.
+//
+// The geometry lives in ./scaleChart.ts and is shared between this initial
+// server render and the client <script> below, so there is no flash of
+// unpositioned content and no duplicated math.
+import { computeChart } from "./scaleChart";
+
+interface ScaleText {
+  /** Intro paragraph. May contain <b> for the highlighted phrase. */
+  intro: string;
+  /** Hint shown above the chart. */
+  hint: string;
+  /** Legend label for the blue line. */
+  company: string;
+  /** Legend label for the green line. */
+  system: string;
+  /** Pin labels, in order (one per threshold). */
+  pins: string[];
+  /** Call-to-action button text. */
+  cta: string;
+}
+
+interface Props {
+  t: ScaleText;
+  /** Initial slider value (0–100). Defaults to 0: the client animates it in. */
+  value?: number;
+}
+
+const { t, value = 0 } = Astro.props;
+const initial = computeChart(value);
+---
+
+<figure class="scale-chart" data-scale-chart>
+  <p class="scale-chart__intro" set:html={t.intro} />
+
+  <p class="scale-chart__hint pb-5">{t.hint}</p>
+
+  <div class="scale-chart__plot">
+    {
+      initial.pins.map((pin, i) => (
+        <div
+          class:list={["pin", { "is-active": pin.active }]}
+          style={`left:${pin.leftPct}%; bottom:${pin.dotBottom}px; transform:${pin.anchorTransform};`}
+        >
+          <span class="pin__chip">{t.pins[i]}</span>
+          <span class="pin__pole" style={`height:${pin.poleHeight}px;`} />
+          <span class="pin__dot" />
+        </div>
+      ))
+    }
+
+    <svg class="scale-chart__svg" viewBox="0 0 560 150" preserveAspectRatio="none">
+      <line x1="0" y1="130" x2="560" y2="130" class="axis" />
+      <path d="M 0 120 L 560 20" class="line-company" data-company-path />
+      <path d={initial.controlPath} class="line-system" data-control-path />
+    </svg>
+
+    <span
+      class="marker marker--company"
+      style={`left:${initial.markerLeftPct}%; bottom:${initial.markerCompanyBottom}px;`}
+      data-marker-company
+    ></span>
+    <span
+      class="marker marker--system"
+      style={`left:${initial.markerLeftPct}%; bottom:${initial.markerControlBottom}px;`}
+      data-marker-system
+    ></span>
+  </div>
+
+  <div class="scale-chart__legend">
+    <span class="is-company text-[14px]">● {t.company}</span>
+    <span class="is-system text-[14px]">● {t.system}</span>
+  </div>
+
+  <input
+    class="scale-chart__slider"
+    type="range"
+    min="0"
+    max="100"
+    value={value}
+    style={`--fill:${value}%`}
+    aria-label={t.hint}
+    data-scale-slider
+  />
+
+  <button class="w-full bg-primary text-white rounded-full mt-5 py-4 px-6 font-roboto font-semibold text-sm">
+    {t.cta}
+  </button>
+</figure>
+
+<style>
+  .scale-chart {
+    --company: var(--color-primary, #00006c);
+    --system: var(--color-secondary, #00c800);
+    --pulse: rgba(0, 200, 0, 0.45);
+
+    width: 100%;
+    max-width: 600px;
+    margin: 0;
+    background: #fff;
+    border-radius: 20px;
+    padding: clamp(22px, 7cqw, 40px);
+    box-shadow: 0 20px 50px -20px rgba(0, 0, 108, 0.25);
+    container-type: inline-size;
+    box-sizing: border-box;
+  }
+
+  .scale-chart__intro {
+    font-size: clamp(14px, 4cqw, 16px);
+    line-height: 1.55;
+    color: #4a4940;
+    margin: 0 0 20px;
+  }
+
+  .scale-chart__intro :global(b) {
+    color: var(--company);
+  }
+
+  .scale-chart__hint {
+    font-size: clamp(10px, 3cqw, 12px);
+    color: #8a8a86;
+    margin: 0 0 16px;
+  }
+
+  .scale-chart__plot {
+    position: relative;
+    height: 260px;
+    margin-bottom: 8px;
+  }
+
+  /* --- Curves ------------------------------------------------------------ */
+
+  .scale-chart__svg {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 150px;
+    display: block;
+    overflow: visible;
+    z-index: 1;
+  }
+
+  .axis {
+    stroke: #e5e3d8;
+    stroke-width: 1;
+  }
+
+  .line-company,
+  .line-system {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  .line-company {
+    stroke: var(--company);
+  }
+
+  .line-system {
+    stroke: var(--system);
+  }
+
+  /* Moving markers: HTML dots over the plot so they stay perfectly round. */
+  .marker {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    /* Centre the dot on its (left, bottom) coordinate. */
+    transform: translate(-50%, 50%);
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .marker--company {
+    background: var(--company);
+  }
+
+  .marker--system {
+    background: var(--system);
+  }
+
+  /* --- Warning pins ------------------------------------------------------ */
+
+  .pin {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 2;
+    max-width: 38cqw;
+  }
+
+  .pin__chip {
+    font-size: clamp(9px, 3.2cqw, 12px);
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.25;
+    border-radius: 10px;
+    padding: clamp(4px, 1.6cqw, 6px) clamp(7px, 2.8cqw, 13px);
+    margin-bottom: 8px;
+    background: #f7f6f2;
+    color: #b8b6a8;
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 0.35s ease,
+      transform 0.35s ease,
+      background 0.35s ease,
+      color 0.35s ease;
+  }
+
+  .pin__pole {
+    width: 2px;
+    background: #dbd9cc;
+    transition:
+      height 0.4s ease,
+      background 0.35s ease;
+    flex-shrink: 0;
+  }
+
+  .pin__dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #c9c7b9;
+    margin-top: -2px;
+    box-shadow: 0 0 0 3px transparent;
+    transition:
+      background 0.35s ease,
+      box-shadow 0.35s ease;
+    flex-shrink: 0;
+  }
+
+  .pin.is-active .pin__chip {
+    background: var(--company);
+    color: #fff;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .pin.is-active .pin__pole {
+    background: var(--company);
+  }
+
+  .pin.is-active .pin__dot {
+    background: var(--system);
+    box-shadow: 0 0 0 3px rgba(0, 200, 0, 0.19);
+  }
+
+  /* --- Legend ------------------------------------------------------------ */
+
+  .scale-chart__legend {
+    display: flex;
+    justify-content: space-between;
+    font-size: clamp(9px, 2.8cqw, 11px);
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+
+  .scale-chart__legend .is-company {
+    color: var(--company);
+  }
+
+  .scale-chart__legend .is-system {
+    color: var(--system);
+  }
+
+  /* --- Slider ------------------------------------------------------------ */
+
+  .scale-chart__slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    /* The part left of the thumb (--fill %) is filled with the brand blue.
+       WebKit has no native "progress" pseudo, so we fake it with a gradient. */
+    background: linear-gradient(
+      to right,
+      var(--company) var(--fill, 0%),
+      #d8d6c9 var(--fill, 0%)
+    );
+    outline: none;
+    margin: 14px 0 0;
+    cursor: pointer;
+  }
+
+  /* Firefox has a real progress element; colour it too. */
+  .scale-chart__slider::-moz-range-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--company);
+  }
+
+  .scale-chart__slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--company);
+    cursor: pointer;
+  }
+
+  .scale-chart__slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--company);
+    cursor: pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pin__chip,
+    .pin__pole,
+    .pin__dot {
+      transition: none;
+    }
+  }
+
+  /* The mono font is used for the terminal-style hint and legend. */
+  .scale-chart__hint,
+  .scale-chart__legend {
+    font-family: var(--font-roboto-mono, monospace);
+  }
+
+  .scale-chart__intro,
+  .pin__chip {
+    font-family: var(--font-roboto, sans-serif);
+  }
+</style>
+
+<script>
+  import { computeChart } from "./scaleChart";
+
+  function initScaleChart(root: HTMLElement) {
+    const slider = root.querySelector<HTMLInputElement>("[data-scale-slider]");
+    const controlPath = root.querySelector<SVGPathElement>("[data-control-path]");
+    const markerCompany = root.querySelector<HTMLElement>("[data-marker-company]");
+    const markerSystem = root.querySelector<HTMLElement>("[data-marker-system]");
+    const pins = Array.from(root.querySelectorAll<HTMLElement>(".pin"));
+
+    if (!slider || !controlPath || !markerCompany || !markerSystem) return;
+
+    function render(value: number) {
+      const state = computeChart(value);
+
+      slider!.style.setProperty("--fill", `${value}%`);
+      controlPath!.setAttribute("d", state.controlPath);
+      markerCompany!.style.left = `${state.markerLeftPct}%`;
+      markerCompany!.style.bottom = `${state.markerCompanyBottom}px`;
+      markerSystem!.style.left = `${state.markerLeftPct}%`;
+      markerSystem!.style.bottom = `${state.markerControlBottom}px`;
+
+      state.pins.forEach((pin, i) => {
+        const el = pins[i];
+        if (!el) return;
+        el.classList.toggle("is-active", pin.active);
+        // Follow the curve as it reshapes with the slider.
+        el.style.bottom = `${pin.dotBottom}px`;
+        const pole = el.querySelector<HTMLElement>(".pin__pole");
+        if (pole) pole.style.height = `${pin.poleHeight}px`;
+      });
+    }
+
+    slider.addEventListener("input", () => render(Number(slider.value)));
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Intro: sweep the slider 0 → 100 over ~1s the first time the chart is
+    // fully in view, then hand control to the user. Runs only once.
+    function playIntro() {
+      const DURATION = 1000;
+      let start: number | null = null;
+      let raf = 0;
+
+      // Let the user take over instantly if they grab the slider mid-sweep.
+      const cancel = () => cancelAnimationFrame(raf);
+      slider!.addEventListener("pointerdown", cancel, { once: true });
+      slider!.addEventListener("keydown", cancel, { once: true });
+
+      const step = (now: number) => {
+        if (start === null) start = now;
+        const p = Math.min((now - start) / DURATION, 1);
+        const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+        slider!.value = String(Math.round(eased * 100));
+        render(Number(slider!.value));
+        if (p < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    }
+
+    if (reduce) {
+      // No motion: land on the final state right away.
+      slider.value = "100";
+      render(100);
+    } else {
+      // Start empty, then animate once fully visible.
+      slider.value = "0";
+      render(0);
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              io.disconnect();
+              playIntro();
+            }
+          }
+        },
+        { threshold: 0.99 },
+      );
+      io.observe(root);
+    }
+  }
+
+  function initAll() {
+    document
+      .querySelectorAll<HTMLElement>("[data-scale-chart]")
+      .forEach(initScaleChart);
+  }
+
+  initAll();
+  // Re-init after Astro view transitions, if used.
+  document.addEventListener("astro:after-swap", initAll);
+</script>

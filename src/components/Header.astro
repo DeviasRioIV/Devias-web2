@@ -1,0 +1,27 @@
+---
+import {Menu} from "@lucide/astro";
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+const { lang = "es", t } = Astro.props;
+
+const esUrl = getRelativeLocaleUrl("es", "");
+const enUrl = getRelativeLocaleUrl("en", "");
+const activeClass = "bg-primary text-white";
+---
+
+<header class="flex justify-between items-center p-6">
+  <a href={getRelativeLocaleUrl(lang, "")} class="h-12.5">
+    <img src="/logos/logo-devias.svg" alt="Logo Devias" class="h-full" />
+  </a>
+
+  <div class="flex gap-4 items-center">
+    <div class="border border-outline rounded-md p-1 flex items-center">
+      <a href={esUrl} class:list={["font-roboto-mono text-[12px] py-1 px-3 rounded-sm text-[#666666] font-bold", lang === "es" && activeClass]}>ES</a>
+      <a href={enUrl} class:list={["font-roboto-mono text-[12px] py-1 px-3 rounded-sm text-[#666666] font-bold", lang === "en" && activeClass]}>EN</a>
+    </div>
+
+    <button class="w-8 h-8 border border-outline rounded-full grid place-content-center" aria-label={t?.menu}>
+      <Menu class="w-4 h-4 text-black" />
+    </button>
+  </div>
+</header>

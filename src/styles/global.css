@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --font-univia-regular: var(--univia-pro-regular);
+  --font-univia-ultra: var(--univia-pro-ultra);
+  --font-roboto: var(--roboto);
+  --font-roboto-mono: var(--roboto-mono);
+
+  --color-primary: #00006C;
+  --color-secondary: #00C800;
+  --color-outline: #E5E5F2;
+}
