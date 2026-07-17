@@ -2,11 +2,11 @@
 //
 // Runs on-demand (see `prerender = false`) as a Vercel serverless function.
 // Re-validates the payload with the SAME Zod schema the client uses — never
-// trust the browser. On success it logs the submission and, if a
-// CONTACT_WEBHOOK_URL env var is set, forwards it there. Swap that block for
-// your email / CRM / DB integration when ready.
+// trust the browser — then stores it in the Supabase `contacts` table (insert
+// allowed by an RLS policy for the `anon` role; see db/contacts.sql).
 import type { APIRoute } from "astro";
 import { contactSchema } from "../../components/Contact/schema";
+import { getSupabaseClient } from "../../lib/supabase";
 
 export const prerender = false;
 
@@ -36,23 +36,26 @@ export const POST: APIRoute = async ({ request }) => {
 
   const data = result.data;
 
-  // --- Do something with the submission -----------------------------------
-  console.log("[contact] new submission:", data);
-
-  const webhook = import.meta.env.CONTACT_WEBHOOK_URL;
-  if (webhook) {
-    try {
-      await fetch(webhook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+  try {
+    const { error } = await getSupabaseClient()
+      .from("contacts")
+      .insert({
+        name: data.name,
+        email: data.email,
+        phone_country: data.phoneCountry,
+        phone: data.phone,
+        company: data.company ?? null,
+        signals: data.signals,
       });
-    } catch (error) {
-      console.error("[contact] webhook forward failed:", error);
-      // The submission is valid; don't fail the user for a webhook hiccup.
+
+    if (error) {
+      console.error("[contact] insert failed:", error);
+      return json({ ok: false, error: "storage" }, 500);
     }
+  } catch (error) {
+    console.error("[contact] unexpected error:", error);
+    return json({ ok: false, error: "server" }, 500);
   }
-  // ------------------------------------------------------------------------
 
   return json({ ok: true });
 };
