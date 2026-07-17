@@ -18,6 +18,7 @@ export interface ContactFieldsText {
   fields: { name: Field; email: Field; phone: Field; company: Field };
   submit: string;
   success: string;
+  sendError: string;
   searchCountry: string;
   errors: { name: string; email: string; phone: string; company: string };
 }
@@ -26,13 +27,13 @@ interface Props {
   t: ContactFieldsText;
   /** Localizes country names. */
   lang?: string;
-  /** Optional URL to POST the payload to. Without it, submit just confirms. */
+  /** URL to POST the payload to. */
   action?: string;
   /** Colour theme. */
   variant?: "dark" | "light";
 }
 
-const { t, lang = "es", action, variant = "dark" } = Astro.props;
+const { t, lang = "es", action = "/api/contact", variant = "dark" } = Astro.props;
 
 const countries = getCountries(lang);
 const defaultCountry = countries.find((c) => c.iso2 === "ar") ?? countries[0];
@@ -118,6 +119,7 @@ const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Bool
 
   <button type="submit" class="cf-btn" data-submit>{t.submit}</button>
   <p class="cf-msg" data-msg role="status">{t.success}</p>
+  <p class="cf-msg cf-msg--error" data-error-msg role="alert">{t.sendError}</p>
 </form>
 
 <style>
@@ -376,7 +378,15 @@ const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Bool
     text-align: center;
   }
 
-  .contact-fields.is-sent .cf-msg {
+  .cf-msg--error {
+    color: var(--cf-danger);
+  }
+
+  .contact-fields.is-sent .cf-msg:not(.cf-msg--error) {
+    display: block;
+  }
+
+  .contact-fields.is-error .cf-msg--error {
     display: block;
   }
 </style>

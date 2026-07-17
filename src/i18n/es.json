@@ -50,6 +50,7 @@
     },
     "submit": "Quiero escalar sin fricción",
     "success": "¡Gracias! Recibimos tu diagnóstico y te vamos a contactar pronto.",
+    "sendError": "No pudimos enviar el formulario. Probá de nuevo en unos minutos.",
     "errors": {
       "name": "Ingresá tu nombre",
       "email": "Ingresá un e-mail válido",

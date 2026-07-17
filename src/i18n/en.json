@@ -50,6 +50,7 @@
     },
     "submit": "I want to scale without friction →",
     "success": "Thanks! We got your diagnosis and we'll reach out soon.",
+    "sendError": "We couldn't send the form. Please try again in a few minutes.",
     "errors": {
       "name": "Enter your name",
       "email": "Enter a valid e-mail",

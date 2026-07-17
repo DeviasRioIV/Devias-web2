@@ -1,9 +1,13 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
+import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
+  // The site stays static; only routes with `export const prerender = false`
+  // (e.g. /api/contact) run on-demand as Vercel serverless functions.
+  adapter: vercel(),
   i18n: {
     locales: ["es", "en"],
     defaultLocale: "es",

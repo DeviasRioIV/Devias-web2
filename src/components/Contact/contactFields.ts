@@ -14,6 +14,7 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
   initCountryDropdown(fieldsEl);
 
   const fields = Array.from(fieldsEl.querySelectorAll<HTMLElement>(".field"));
+  const submitBtn = fieldsEl.querySelector<HTMLButtonElement>("[data-submit]");
   const clearErrors = () => fields.forEach((f) => f.classList.remove("has-error"));
 
   // Let the host (e.g. the two-step slider) react to height changes.
@@ -31,6 +32,7 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
   fieldsEl.addEventListener("submit", async (event) => {
     event.preventDefault();
     clearErrors();
+    fieldsEl.classList.remove("is-error");
 
     const fd = new FormData(fieldsEl);
     const data = {
@@ -53,20 +55,22 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
       return;
     }
 
-    const action = fieldsEl.dataset.action;
-    if (action) {
-      try {
-        await fetch(action, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(result.data),
-        });
-      } catch {
-        /* Surface a real error UI once a backend exists. */
-      }
+    const action = fieldsEl.dataset.action || "/api/contact";
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const res = await fetch(action, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(result.data),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      fieldsEl.classList.add("is-sent"); // keep disabled: submitted
+    } catch {
+      fieldsEl.classList.add("is-error");
+      if (submitBtn) submitBtn.disabled = false; // let them retry
     }
 
-    fieldsEl.classList.add("is-sent");
     emitLayout();
   });
 }
