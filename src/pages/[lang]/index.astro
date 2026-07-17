@@ -8,6 +8,7 @@ import TwoStepsContactForm from '../../components/TwoStepsContactForm/TwoStepsCo
 import SimpleContactForm from '../../components/SimpleContactForm/ContactForm.astro';
 import { getTranslations } from '../../i18n/utils';
 import GridBackground from '../../components/GridBackground.astro';
+import Footer from '../../components/Footer.astro';
 
 export function getStaticPaths() {
   return [
@@ -23,65 +24,69 @@ const t = getTranslations(lang);
 <Layout lang={lang} t={t}>
 	<HeroSection t={t.hero} />
 
-  <div class="flex justify-center px-2.5 py-10">
-    <TwoStepsContactForm t={t.contact} lang={lang} />
-  </div>
-
-  <h3 class="flex flex-col px-2.5 mb-12">
-    {t.homeTexts.operationalChaosTitle.map((line, i) => (
-      <span class={`inline max-w-fit font-roboto text-[32px] bg-primary mb-1 px-2 ${i<=1 ? 'text-white' : 'text-secondary font-bold'}`}>{line}</span>
-    ))}
-  </h3>
-
-  <ErrorWindows t={t.errorWindows} />
-
-  <p class="max-w-md px-2.5 py-10 text-primary text-[22px] leading-relaxed">
-    {t.homeTexts.notFastProblem.noUnderline}
-    <b class="hand-underline">{t.homeTexts.notFastProblem.underline}</b>
-  </p>
-
-  <h3 class="flex flex-col px-2.5 mb-12">
-    {t.homeTexts.growingUpIsNotAProblem.map((line, i) => (
-      <span class={`inline max-w-fit font-roboto text-[32px] bg-primary mb-1 px-2 ${i<=1 ? 'text-white' : 'text-secondary font-bold'}`}>{line}</span>
-    ))}
-  </h3>
-
-  <p class="max-w-md px-2.5 py-10 text-primary text-[22px] leading-relaxed">
-    {t.homeTexts.smallSystem.noUnderline}
-    <b class="hand-underline"> {t.homeTexts.smallSystem.underline}</b>
-  </p>
-
-  <ScaleChart t={t.scale} />
-
-  <h3 class="flex flex-col px-2.5 mb-12 mt-12">
-    {t.homeTexts.weDontSellHours.map((line, i) => (
-      <span class={`inline max-w-fit font-roboto text-[32px] bg-primary mb-1 px-2 ${i<=1 ? 'text-white' : 'text-secondary font-bold'}`}>{line}</span>
-    ))}
-  </h3>
-
-  <DiagnosticSteps t={t.diagnosticSteps} />
-
-  <div class="relative w-screen py-25 px-2.5 mt-12">
-    <GridBackground />
-
-    <h3 class="flex flex-col">
-      {t.homeTexts.Leaders.map((line, i) => (
+  <main class="bg-white rounded-b-lg z-10 relative">
+    <div class="flex justify-center px-2.5 py-10">
+      <TwoStepsContactForm t={t.contact} lang={lang} />
+    </div>
+  
+    <h3 class="flex flex-col px-2.5 mb-12" id="operational-chaos">
+      {t.homeTexts.operationalChaosTitle.map((line, i) => (
         <span class={`inline max-w-fit font-roboto text-[32px] bg-primary mb-1 px-2 ${i<=1 ? 'text-white' : 'text-secondary font-bold'}`}>{line}</span>
       ))}
     </h3>
-  </div>
+  
+    <ErrorWindows t={t.errorWindows} />
+  
+    <p class="max-w-md px-2.5 py-10 text-primary text-[22px] leading-relaxed">
+      {t.homeTexts.notFastProblem.noUnderline}
+      <b class="hand-underline">{t.homeTexts.notFastProblem.underline}</b>
+    </p>
+  
+    <h3 class="flex flex-col px-2.5 mb-12">
+      {t.homeTexts.growingUpIsNotAProblem.map((line, i) => (
+        <span class={`inline max-w-fit font-roboto text-[32px] bg-primary mb-1 px-2 ${i<=1 ? 'text-white' : 'text-secondary font-bold'}`}>{line}</span>
+      ))}
+    </h3>
+  
+    <p class="max-w-md px-2.5 py-10 text-primary text-[22px] leading-relaxed">
+      {t.homeTexts.smallSystem.noUnderline}
+      <b class="hand-underline"> {t.homeTexts.smallSystem.underline}</b>
+    </p>
+  
+    <ScaleChart t={t.scale} />
+  
+    <h3 class="flex flex-col px-2.5 mb-12 mt-12" id="we-dont-sell-hours">
+      {t.homeTexts.weDontSellHours.map((line, i) => (
+        <span class={`inline max-w-fit font-roboto text-[32px] bg-primary mb-1 px-2 ${i<=1 ? 'text-white' : 'text-secondary font-bold'}`}>{line}</span>
+      ))}
+    </h3>
+  
+    <DiagnosticSteps t={t.diagnosticSteps} />
+  
+    <div class="relative w-screen py-25 px-2.5 mt-12" id="our-clients">
+      <GridBackground />
+  
+      <h3 class="flex flex-col">
+        {t.homeTexts.Leaders.map((line, i) => (
+          <span class={`inline max-w-fit font-roboto text-[32px] bg-primary mb-1 px-2 ${i<=1 ? 'text-white' : 'text-secondary font-bold'}`}>{line}</span>
+        ))}
+      </h3>
+    </div>
+  
+    <div class='flex flex-col px-2.5 my-12'>
+      <h5 class="font-univia-ultra text-[40px] text-primary uppercase">
+        {t.homeTexts.yourNextDecision.blue}
+      </h5>
+  
+      <h5 class="font-univia-ultra text-[40px] text-secondary uppercase">
+        {t.homeTexts.yourNextDecision.green}
+      </h5>
+    </div>
+  
+    <div class="px-2.5">
+      <SimpleContactForm t={t.contact} lang={lang} />
+    </div>
+  </main>
 
-  <div class='flex flex-col px-2.5 my-12'>
-    <h5 class="font-univia-ultra text-[40px] text-primary uppercase">
-      {t.homeTexts.yourNextDecision.blue}
-    </h5>
-
-    <h5 class="font-univia-ultra text-[40px] text-secondary uppercase">
-      {t.homeTexts.yourNextDecision.green}
-    </h5>
-  </div>
-
-  <div class="px-2.5">
-    <SimpleContactForm t={t.contact} lang={lang} />
-  </div>
+  <Footer t={t.footer} />
 </Layout>

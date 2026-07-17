@@ -108,5 +108,27 @@
       "title": "Desarrollo e implementación",
       "description": "Construimos lo necesario para que tu operación pueda sostener el crecimiento que ya estás generando."
     }
-  ]
+  ],
+  "footer": {
+    "aboutUs": {
+      "title": "Nosotros",
+      "links": [
+        { "label": "Problemas", "href": "#operational-chaos" },
+        { "label": "Cómo trabajamos", "href": "#we-dont-sell-hours" },
+        { "label": "Casos reales", "href": "#our-clients" }
+      ]
+    },
+    "social": {
+      "title": "",
+      "links": [
+        { "label": "Linkedin", "href": "https://www.linkedin.com/company/devias-ar/posts/?feedView=all" },
+        { "label": "hola@devias.ar", "href": "mailto:hola@devias.ar" }
+      ]
+    },
+    "directions": [
+      "Devias  LLC, address at:",
+      "601 Brickell Key Drive, Suite 901, Miami, FL 33131.",
+      "San Martín 1496, Río Cuarto 5800, Córdoba, Argentina."
+    ]
+  }
 }

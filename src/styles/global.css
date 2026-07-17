@@ -11,6 +11,10 @@
   --color-outline: #E5E5F2;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 /* Subrayado "a mano" que sigue cada renglón de un texto que hace wrap.
    Aplicar sobre un elemento INLINE (span, b, mark) que envuelva el texto.
    El SVG va como background-image (no ::after) y `box-decoration-break: clone`
