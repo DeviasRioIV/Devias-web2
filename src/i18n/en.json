@@ -25,5 +25,36 @@
       "Customers who notice the errors before you do",
       "Every month that passes, the problem gets more expensive to fix"
     ]
+  },
+  "contact": {
+    "sectionTitle": "Do you recognize this in your company?",
+    "step2Title": "Diagnosis — Step 2",
+    "signals": [
+      "Everything depends on a spreadsheet only two people understand",
+      "Your team puts out fires instead of building",
+      "Every change you ask for takes longer than it should",
+      "You have no real visibility into the day to day",
+      "If one or two key people leave, the business stalls",
+      "You grow, but keeping it running gets harder every time"
+    ],
+    "searchCountry": "Search country",
+    "resultLabel": "Result:",
+    "activeSuffix": "signals active",
+    "next": "I want to scale without friction →",
+    "back": "Back to previous step",
+    "fields": {
+      "name": { "label": "Full name", "placeholder": "Your name" },
+      "email": { "label": "E-mail", "placeholder": "yourname@email.com" },
+      "phone": { "label": "Phone", "placeholder": "93344582" },
+      "company": { "label": "Company", "placeholder": "Company name" }
+    },
+    "submit": "Send diagnosis",
+    "success": "Thanks! We got your diagnosis and we'll reach out soon.",
+    "errors": {
+      "name": "Enter your name",
+      "email": "Enter a valid e-mail",
+      "phone": "Enter a valid phone number",
+      "company": "Enter your company name"
+    }
   }
 }

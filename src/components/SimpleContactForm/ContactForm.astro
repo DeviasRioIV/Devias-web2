@@ -1,0 +1,60 @@
+---
+// Single-step contact form (light theme).
+//
+// Just the contact details — the same shared <ContactFields> the two-step form
+// uses, on a light container. The container owns the background; ContactFields
+// adapts its text/input/button colours via the `light` variant.
+import ContactFields from "../Contact/ContactFields.astro";
+
+interface Field {
+  label: string;
+  placeholder: string;
+}
+
+interface ContactText {
+  fields: { name: Field; email: Field; phone: Field; company: Field };
+  submit: string;
+  success: string;
+  searchCountry: string;
+  errors: { name: string; email: string; phone: string; company: string };
+}
+
+interface Props {
+  t: ContactText;
+  /** Optional heading shown above the fields. */
+  title?: string;
+  /** Optional URL to POST the payload to. Without it, submit just confirms. */
+  action?: string;
+  /** Used to localize country names. */
+  lang?: string;
+}
+
+const { t, title, action, lang = "es" } = Astro.props;
+---
+
+<div class="simple-contact">
+  {title && <h2 class="simple-contact__title">{title}</h2>}
+  <ContactFields t={t} lang={lang} action={action} variant="light" />
+</div>
+
+<style>
+  .simple-contact {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid var(--color-outline, #e5e5f2);
+    border-radius: 8px;
+    padding: clamp(20px, 5vw, 32px);
+    box-shadow: 0 24px 60px -32px rgba(0, 0, 108, 0.25);
+  }
+
+  .simple-contact__title {
+    margin: 0 0 20px;
+    color: var(--color-primary, #00006c);
+    font-family: var(--font-roboto, sans-serif);
+    font-size: 22px;
+    font-weight: 700;
+  }
+</style>

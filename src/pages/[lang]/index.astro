@@ -3,6 +3,8 @@ import Layout from '../../layouts/Layout.astro';
 import HeroSection from '../../components/HeroSection.astro';
 import ScaleChart from '../../components/ScaleChart/ScaleChart.astro';
 import ErrorWindows from '../../components/ErrorWindows/ErrorWindows.astro';
+import ContactForm from '../../components/TwoStepsContactForm/ContactForm.astro';
+import SimpleContactForm from '../../components/SimpleContactForm/ContactForm.astro';
 import { getTranslations } from '../../i18n/utils';
 import GridBackground from '../../components/GridBackground.astro';
 
@@ -18,10 +20,16 @@ const t = getTranslations(lang);
 ---
 
 <Layout lang={lang} t={t}>
-	<HeroSection t={t.hero} />
-  <div class="relative h-screen w-full">
+	<!-- <HeroSection t={t.hero} />
+  <div class="relative w-full">
     <ScaleChart t={t.scale} />
     <GridBackground />
     <ErrorWindows t={t.errorWindows} />
+  </div> -->
+  <div class="flex justify-center px-2.5 py-10">
+    <ContactForm t={t.contact} lang={lang} />
+  </div>
+  <div class="flex justify-center px-2.5 py-10">
+    <SimpleContactForm t={t.contact} lang={lang} />
   </div>
 </Layout>

@@ -1,0 +1,391 @@
+---
+// Shared contact fields: name, e-mail, phone (with searchable country
+// dropdown) and company, plus submit + success message and Zod validation.
+//
+// Reused by both the two-step form (dark) and the single-step form (light).
+// It never paints its own background — the host container does that — and all
+// colours come from CSS variables so a `variant` flips the whole theme.
+import { ChevronDown } from "@lucide/astro";
+import { getCountries } from "./countries";
+import "flag-icons/css/flag-icons.min.css";
+
+interface Field {
+  label: string;
+  placeholder: string;
+}
+
+export interface ContactFieldsText {
+  fields: { name: Field; email: Field; phone: Field; company: Field };
+  submit: string;
+  success: string;
+  searchCountry: string;
+  errors: { name: string; email: string; phone: string; company: string };
+}
+
+interface Props {
+  t: ContactFieldsText;
+  /** Localizes country names. */
+  lang?: string;
+  /** Optional URL to POST the payload to. Without it, submit just confirms. */
+  action?: string;
+  /** Colour theme. */
+  variant?: "dark" | "light";
+}
+
+const { t, lang = "es", action, variant = "dark" } = Astro.props;
+
+const countries = getCountries(lang);
+const defaultCountry = countries.find((c) => c.iso2 === "ar") ?? countries[0];
+
+// Theme classes are applied to both the form and the popover (the popover is
+// moved to <body> at runtime, so it must carry its own theme variables).
+const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Boolean).join(" ");
+---
+
+<form class:list={["contact-fields", theme]} data-fields data-action={action} novalidate>
+  <div class="field" data-field="name">
+    <label class="field__label" for="cf-name">{t.fields.name.label}</label>
+    <input class="input" id="cf-name" name="name" type="text" placeholder={t.fields.name.placeholder} autocomplete="name" />
+    <span class="field__error">{t.errors.name}</span>
+  </div>
+
+  <div class="field" data-field="email">
+    <label class="field__label" for="cf-email">{t.fields.email.label}</label>
+    <input class="input" id="cf-email" name="email" type="email" placeholder={t.fields.email.placeholder} autocomplete="email" />
+    <span class="field__error">{t.errors.email}</span>
+  </div>
+
+  <div class="field" data-field="phone">
+    <label class="field__label" for="cf-phone">{t.fields.phone.label}</label>
+    <div class="phone">
+      <div class="country" data-country>
+        <button
+          type="button"
+          class="country__toggle"
+          data-country-toggle
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-label={t.fields.phone.label}
+        >
+          <span class={`fi fi-${defaultCountry.iso2}`} data-country-flag></span>
+          <span class="country__code" data-country-code>{defaultCountry.dial}</span>
+          <ChevronDown class="country__caret" size={16} aria-hidden="true" />
+        </button>
+        <input type="hidden" name="phoneCountry" value={defaultCountry.dial} data-country-value />
+        <div class:list={["country__pop", theme]} data-country-pop hidden>
+          <input
+            type="text"
+            class="country__search"
+            data-country-search
+            placeholder={t.searchCountry}
+            aria-label={t.searchCountry}
+          />
+          <ul class="country__list" role="listbox" data-country-list>
+            {
+              countries.map((c) => (
+                <li
+                  class="country__opt"
+                  role="option"
+                  data-country-opt
+                  data-iso={c.iso2}
+                  data-dial={c.dial}
+                  data-search={`${c.name.toLowerCase()} ${c.dial}`}
+                  aria-selected={c.iso2 === defaultCountry.iso2 ? "true" : "false"}
+                >
+                  <span class={`fi fi-${c.iso2}`} />
+                  <span class="country__opt-name">{c.name}</span>
+                  <span class="country__opt-dial">{c.dial}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+      <input class="input phone__number" id="cf-phone" name="phone" type="tel" placeholder={t.fields.phone.placeholder} autocomplete="tel" />
+    </div>
+    <span class="field__error">{t.errors.phone}</span>
+  </div>
+
+  <div class="field" data-field="company">
+    <label class="field__label" for="cf-company">{t.fields.company.label}</label>
+    <input class="input" id="cf-company" name="company" type="text" placeholder={t.fields.company.placeholder} autocomplete="organization" />
+    <span class="field__error">{t.errors.company}</span>
+  </div>
+
+  <button type="submit" class="cf-btn" data-submit>{t.submit}</button>
+  <p class="cf-msg" data-msg role="status">{t.success}</p>
+</form>
+
+<style>
+  /* --- Theme tokens ------------------------------------------------------ */
+
+  .cf-theme {
+    --cf-font: var(--font-roboto-mono, monospace);
+    --cf-label: #fff;
+    --cf-input-bg: rgba(255, 255, 255, 0.07);
+    --cf-input-border: rgba(255, 255, 255, 0.14);
+    --cf-input-text: #fff;
+    --cf-placeholder: rgba(255, 255, 255, 0.4);
+    --cf-accent: var(--color-secondary, #00c800);
+    --cf-danger: #ff8a8a;
+    --cf-muted: rgba(255, 255, 255, 0.6);
+    --cf-btn-bg: var(--color-secondary, #00c800);
+    --cf-btn-text: var(--color-primary, #00006c);
+    --cf-btn-rounded: 999px;
+    --cf-pop-bg: #0c0c63;
+    --cf-pop-border: rgba(255, 255, 255, 0.14);
+    --cf-opt-hover: rgba(255, 255, 255, 0.1);
+  }
+
+  .cf-theme--light {
+    --cf-font: var(--font-roboto, sans-serif);
+    --cf-label: var(--color-primary, #00006c);
+    --cf-input-bg: #f4f4fb;
+    --cf-input-border: var(--color-outline, #e5e5f2);
+    --cf-input-text: #12122e;
+    --cf-placeholder: #9a9ab0;
+    --cf-accent: var(--color-secondary, #00c800);
+    --cf-danger: #d23b3b;
+    --cf-muted: #6b6b80;
+    --cf-btn-bg: var(--color-primary, #00006c);
+    --cf-btn-text: #fff;
+    --cf-btn-rounded: 8px;
+    --cf-pop-bg: #ffffff;
+    --cf-pop-border: var(--color-outline, #e5e5f2);
+    --cf-opt-hover: #f0f0f8;
+  }
+
+  /* --- Fields ------------------------------------------------------------ */
+
+  .contact-fields {
+    font-family: var(--cf-font);
+  }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  .field__label {
+    display: block;
+    color: var(--cf-label);
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .input {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--cf-input-bg);
+    border: 1px solid var(--cf-input-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--cf-input-text);
+    font: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+  }
+
+  .input::placeholder {
+    color: var(--cf-placeholder);
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--cf-accent);
+  }
+
+  .phone {
+    display: flex;
+    gap: 8px;
+  }
+
+  .phone__number {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .field__error {
+    display: none;
+    margin-top: 6px;
+    color: var(--cf-danger);
+    font-size: 12px;
+  }
+
+  .field.has-error .input {
+    border-color: var(--cf-danger);
+  }
+
+  .field.has-error .field__error {
+    display: block;
+  }
+
+  /* --- Country dropdown -------------------------------------------------- */
+
+  .country {
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .country__toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    background: var(--cf-input-bg);
+    border: 1px solid var(--cf-input-border);
+    border-radius: 10px;
+    padding: 12px 12px;
+    color: var(--cf-input-text);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+  }
+
+  .country__toggle:focus-visible {
+    outline: none;
+    border-color: var(--cf-accent);
+  }
+
+  .country__caret {
+    opacity: 0.6;
+  }
+
+  .country .fi {
+    font-size: 16px;
+    border-radius: 2px;
+  }
+
+  /* Popover — themed via .cf-theme on itself since it is moved to <body>. */
+  .country__pop {
+    position: fixed;
+    z-index: 60;
+    box-sizing: border-box;
+    background: var(--cf-pop-bg);
+    border: 1px solid var(--cf-pop-border);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 20px 44px -12px rgba(0, 0, 0, 0.35);
+    font-family: var(--cf-font);
+  }
+
+  .country__pop[hidden] {
+    display: none;
+  }
+
+  .country__search {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--cf-input-bg);
+    border: 1px solid var(--cf-input-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--cf-input-text);
+    font: inherit;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .country__search::placeholder {
+    color: var(--cf-placeholder);
+  }
+
+  .country__search:focus {
+    outline: none;
+    border-color: var(--cf-accent);
+  }
+
+  .country__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .country__opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--cf-input-text);
+    font-size: 13px;
+  }
+
+  .country__opt[hidden] {
+    display: none;
+  }
+
+  .country__opt-name {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .country__opt-dial {
+    color: var(--cf-muted);
+  }
+
+  .country__opt.is-active,
+  .country__opt:hover {
+    background: var(--cf-opt-hover);
+  }
+
+  .country__opt[aria-selected="true"] .country__opt-name {
+    color: var(--cf-accent);
+  }
+
+  /* --- Button & message -------------------------------------------------- */
+
+  .cf-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--cf-btn-bg);
+    color: var(--cf-btn-text);
+    font: inherit;
+    font-weight: 700;
+    font-size: 14px;
+    border: none;
+    border-radius: var(--cf-btn-rounded);
+    padding: 16px 24px;
+    margin-top: 4px;
+    cursor: pointer;
+    transition: filter 0.2s ease;
+  }
+
+  .cf-btn:hover {
+    filter: brightness(1.08);
+  }
+
+  .cf-msg {
+    display: none;
+    margin: 12px 0 0;
+    color: var(--cf-accent);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .contact-fields.is-sent .cf-msg {
+    display: block;
+  }
+</style>
+
+<script>
+  import { initContactFields } from "./contactFields";
+
+  function initAll() {
+    document
+      .querySelectorAll<HTMLFormElement>("[data-fields]")
+      .forEach(initContactFields);
+  }
+
+  initAll();
+  document.addEventListener("astro:after-swap", initAll);
+</script>

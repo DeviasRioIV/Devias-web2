@@ -25,5 +25,36 @@
       "Clientes que notan los errores antes que vos",
       "Cada mes que pasa, el problema se vuelve más caro de resolver"
     ]
+  },
+  "contact": {
+    "sectionTitle": "¿Reconoces esto en tu empresa?",
+    "step2Title": "Diagnóstico — Paso 2",
+    "signals": [
+      "Todo depende de un Excel que solo dos personas entienden",
+      "Tu equipo apaga incendios en vez de construir",
+      "Cada cambio que pedís tarda más de lo que debería",
+      "No tenés visibilidad real del día a día",
+      "Si una o dos personas clave se van, el negocio se frena",
+      "Crecés, pero cada vez cuesta más sostenerlo"
+    ],
+    "searchCountry": "Buscar país",
+    "resultLabel": "Resultado:",
+    "activeSuffix": "señales activas",
+    "next": "Quiero escalar sin fricción →",
+    "back": "Volver al paso anterior",
+    "fields": {
+      "name": { "label": "Nombre completo", "placeholder": "Tu nombre" },
+      "email": { "label": "E-mail", "placeholder": "tunombre@email.com" },
+      "phone": { "label": "Teléfono", "placeholder": "93344582" },
+      "company": { "label": "Empresa", "placeholder": "Nombre de la empresa" }
+    },
+    "submit": "Enviar diagnóstico",
+    "success": "¡Gracias! Recibimos tu diagnóstico y te vamos a contactar pronto.",
+    "errors": {
+      "name": "Ingresá tu nombre",
+      "email": "Ingresá un e-mail válido",
+      "phone": "Ingresá un teléfono válido",
+      "company": "Ingresá el nombre de tu empresa"
+    }
   }
 }

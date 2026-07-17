@@ -1,0 +1,344 @@
+---
+// Two-step contact / "diagnóstico" form.
+//
+// Step 1: the user ticks the "señales" they recognise (live counter).
+// Step 2: their contact details (shared <ContactFields>, dark theme).
+// Moving between steps slides the track horizontally; the viewport height
+// animates to fit the active step. Pure Astro + a small client script.
+import { ArrowLeft } from "@lucide/astro";
+import ContactFields from "../Contact/ContactFields.astro";
+
+interface Field {
+  label: string;
+  placeholder: string;
+}
+
+interface ContactText {
+  step2Title: string;
+  signals: string[];
+  resultLabel: string;
+  activeSuffix: string;
+  next: string;
+  back: string;
+  sectionTitle: string;
+  searchCountry: string;
+  fields: { name: Field; email: Field; phone: Field; company: Field };
+  submit: string;
+  success: string;
+  errors: { name: string; email: string; phone: string; company: string };
+}
+
+interface Props {
+  t: ContactText;
+  /** Optional URL to POST the payload to. Without it, submit just confirms. */
+  action?: string;
+  /** Used to localize country names. */
+  lang?: string;
+}
+
+const { t, action, lang = "es" } = Astro.props;
+---
+
+<section class="contact" data-contact>
+  <h2 class="font-univia-ultra text-[40px] text-primary uppercase mb-4">
+    {t.sectionTitle}
+  </h2>
+  <div class="card">
+    <div class="viewport" data-viewport>
+      <div class="track" data-track>
+        <!-- Step 1: signals -->
+        <div class="panel" data-panel>
+          <ul class="signals">
+            {
+              t.signals.map((signal, i) => (
+                <li>
+                  <label class="signal">
+                    <input class="signal__input" type="checkbox" value={i} data-signal />
+                    <span class="signal__box" aria-hidden="true" />
+                    <span class="signal__text">{signal}</span>
+                  </label>
+                </li>
+              ))
+            }
+          </ul>
+
+          <div class="foot">
+            <p class="result">
+              {t.resultLabel}
+              <span class="result__count">
+                <span data-count>0</span>/{t.signals.length}
+                {t.activeSuffix}
+              </span>
+            </p>
+            <button type="button" class="btn" data-next>
+              {t.next}
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: details -->
+        <div class="panel" data-panel>
+          <div class="head">
+            <button type="button" class="back" data-back aria-label={t.back}>
+              <ArrowLeft size={18} aria-hidden="true" />
+            </button>
+            <span class="head__title">{t.step2Title}</span>
+          </div>
+
+          <ContactFields t={t} lang={lang} action={action} variant="dark" />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .contact {
+    --accent: var(--color-secondary, #00c800);
+    --muted: rgba(255, 255, 255, 0.6);
+
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    font-family: var(--font-roboto-mono, monospace);
+  }
+
+  .card {
+    background: var(--color-primary, #00006c);
+    border-radius: 8px;
+    padding: clamp(20px, 5vw, 32px);
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 108, 0.55);
+  }
+
+  /* --- Slider ------------------------------------------------------------ */
+
+  .viewport {
+    overflow: hidden;
+    transition: height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .track {
+    display: flex;
+    /* Let each panel keep its natural height so we can size the viewport to
+       the active step (stretch would make both report the tallest height). */
+    align-items: flex-start;
+    width: 200%;
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .contact.is-step2 .track {
+    transform: translateX(-50%);
+  }
+
+  .panel {
+    flex: 0 0 50%;
+    width: 50%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* --- Step 1: signals --------------------------------------------------- */
+
+  .signals {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .signal {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .signal:has(.signal__input:checked) {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .signal:has(.signal__input:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Visually-hidden but still focusable checkbox. */
+  .signal__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .signal__box::before {
+    content: "[ ]";
+    color: var(--muted);
+    font-weight: 700;
+    text-wrap: nowrap;
+  }
+
+  .signal:has(.signal__input:checked) .signal__box::before {
+    content: "[x]";
+    color: var(--accent);
+  }
+
+  .signal__text {
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.45;
+    transition: color 0.2s ease;
+  }
+
+  .signal:has(.signal__input:checked) .signal__text {
+    color: var(--accent);
+  }
+
+  .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .result {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .result__count {
+    display: block;
+    color: var(--accent);
+    margin-top: 2px;
+    font-size: 12px;
+  }
+
+  /* --- Step 2: header ---------------------------------------------------- */
+
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .back {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .back:hover {
+    border-color: var(--accent);
+  }
+
+  .head__title {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+  }
+
+  /* --- "Next" button ----------------------------------------------------- */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: var(--color-primary, #00006c);
+    font: inherit;
+    font-weight: 700;
+    font-size: 14px;
+    border: none;
+    border-radius: 999px;
+    padding: 16px 24px;
+    cursor: pointer;
+    transition: filter 0.2s ease;
+  }
+
+  .btn:hover {
+    filter: brightness(1.08);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .viewport,
+    .track {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  function initTwoStepForm(root: HTMLElement) {
+    if (root.dataset.init) return;
+    root.dataset.init = "1";
+
+    const viewport = root.querySelector<HTMLElement>("[data-viewport]");
+    const panels = Array.from(root.querySelectorAll<HTMLElement>("[data-panel]"));
+    const next = root.querySelector<HTMLElement>("[data-next]");
+    const back = root.querySelector<HTMLElement>("[data-back]");
+    const countEl = root.querySelector<HTMLElement>("[data-count]");
+    if (!viewport || panels.length < 2) return;
+
+    let step = 0;
+
+    // Keep the viewport sized to the active step so the height animates too.
+    const fitHeight = () => {
+      viewport.style.height = `${panels[step].offsetHeight}px`;
+    };
+
+    const goTo = (n: number) => {
+      step = n;
+      root.classList.toggle("is-step2", step === 1);
+      fitHeight();
+    };
+
+    next?.addEventListener("click", () => goTo(1));
+    back?.addEventListener("click", () => goTo(0));
+
+    // Live "N/6 señales activas" counter.
+    const signals = Array.from(root.querySelectorAll<HTMLInputElement>("[data-signal]"));
+    const updateCount = () => {
+      if (countEl) countEl.textContent = String(signals.filter((s) => s.checked).length);
+    };
+    signals.forEach((s) => s.addEventListener("change", updateCount));
+
+    // <ContactFields> tells us when its height changes (errors, success).
+    root.addEventListener("contactfields:layout", fitHeight);
+
+    // Initial sizing (and once web fonts settle, which can change heights).
+    requestAnimationFrame(fitHeight);
+    document.fonts?.ready.then(fitHeight);
+
+    let resizeTimer: number;
+    window.addEventListener("resize", () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(fitHeight, 150);
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>("[data-contact]").forEach(initTwoStepForm);
+  }
+
+  initAll();
+  document.addEventListener("astro:after-swap", initAll);
+</script>
