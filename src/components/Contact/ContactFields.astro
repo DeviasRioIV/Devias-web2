@@ -37,6 +37,10 @@ const { t, lang = "es", action, variant = "dark" } = Astro.props;
 const countries = getCountries(lang);
 const defaultCountry = countries.find((c) => c.iso2 === "ar") ?? countries[0];
 
+// Unique per instance so multiple forms on one page don't clash on ids
+// (label `for`, getElementById). Astro has no useId, so a short random suffix.
+const uid = crypto.randomUUID().slice(0, 8);
+
 // Theme classes are applied to both the form and the popover (the popover is
 // moved to <body> at runtime, so it must carry its own theme variables).
 const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Boolean).join(" ");
@@ -44,19 +48,19 @@ const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Bool
 
 <form class:list={["contact-fields", theme]} data-fields data-action={action} novalidate>
   <div class="field" data-field="name">
-    <label class="field__label" for="cf-name">{t.fields.name.label}</label>
-    <input class="input" id="cf-name" name="name" type="text" placeholder={t.fields.name.placeholder} autocomplete="name" />
+    <label class="field__label" for={`${uid}-name`}>{t.fields.name.label}</label>
+    <input class="input" id={`${uid}-name`} name="name" type="text" placeholder={t.fields.name.placeholder} autocomplete="name" />
     <span class="field__error">{t.errors.name}</span>
   </div>
 
   <div class="field" data-field="email">
-    <label class="field__label" for="cf-email">{t.fields.email.label}</label>
-    <input class="input" id="cf-email" name="email" type="email" placeholder={t.fields.email.placeholder} autocomplete="email" />
+    <label class="field__label" for={`${uid}-email`}>{t.fields.email.label}</label>
+    <input class="input" id={`${uid}-email`} name="email" type="email" placeholder={t.fields.email.placeholder} autocomplete="email" />
     <span class="field__error">{t.errors.email}</span>
   </div>
 
   <div class="field" data-field="phone">
-    <label class="field__label" for="cf-phone">{t.fields.phone.label}</label>
+    <label class="field__label" for={`${uid}-phone`}>{t.fields.phone.label}</label>
     <div class="phone">
       <div class="country" data-country>
         <button
@@ -101,14 +105,14 @@ const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Bool
           </ul>
         </div>
       </div>
-      <input class="input phone__number" id="cf-phone" name="phone" type="tel" placeholder={t.fields.phone.placeholder} autocomplete="tel" />
+      <input class="input phone__number" id={`${uid}-phone`} name="phone" type="tel" placeholder={t.fields.phone.placeholder} autocomplete="tel" />
     </div>
     <span class="field__error">{t.errors.phone}</span>
   </div>
 
   <div class="field" data-field="company">
-    <label class="field__label" for="cf-company">{t.fields.company.label}</label>
-    <input class="input" id="cf-company" name="company" type="text" placeholder={t.fields.company.placeholder} autocomplete="organization" />
+    <label class="field__label" for={`${uid}-company`}>{t.fields.company.label}</label>
+    <input class="input" id={`${uid}-company`} name="company" type="text" placeholder={t.fields.company.placeholder} autocomplete="organization" />
     <span class="field__error">{t.errors.company}</span>
   </div>
 

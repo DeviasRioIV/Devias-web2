@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import DiagnosticSteps from '../../components/DiagnosticSteps.astro';
 import HeroSection from '../../components/HeroSection.astro';
-import ScaleChart from '../../components/ScaleChart/ScaleChart.astro';
+import ScaleChartReveal from '../../components/ScaleChartReveal.astro';
 import ErrorWindows from '../../components/ErrorWindows/ErrorWindows.astro';
 import TwoStepsContactForm from '../../components/TwoStepsContactForm/TwoStepsContactForm.astro';
 import SimpleContactForm from '../../components/SimpleContactForm/ContactForm.astro';
@@ -53,7 +53,7 @@ const t = getTranslations(lang);
       <b class="hand-underline"> {t.homeTexts.smallSystem.underline}</b>
     </p>
   
-    <ScaleChart t={t.scale} />
+    <ScaleChartReveal scale={t.scale} contact={t.contact} lang={lang} />
   
     <h3 class="flex flex-col px-2.5 mb-12 mt-12" id="we-dont-sell-hours">
       {t.homeTexts.weDontSellHours.map((line, i) => (

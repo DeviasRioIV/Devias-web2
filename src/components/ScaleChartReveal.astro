@@ -1,0 +1,143 @@
+---
+// Scale chart that slides aside to reveal the (light) single-step contact form
+// in its place, triggered by the chart's CTA button (#cta-button-graph).
+//
+// Same horizontal-slider pattern as the two-step form: a viewport clips a
+// 200%-wide track holding two panels; the viewport height animates to the
+// active panel.
+import { ArrowLeft } from "@lucide/astro";
+import ScaleChart from "./ScaleChart/ScaleChart.astro";
+import SimpleContactForm from "./SimpleContactForm/ContactForm.astro";
+
+interface Props {
+  scale: any;
+  contact: any;
+  lang?: string;
+  /** Optional URL to POST the contact payload to. */
+  action?: string;
+}
+
+const { scale, contact, lang = "es", action } = Astro.props;
+---
+
+<div class="reveal px-2.5" data-reveal>
+  <div class="reveal__viewport" data-reveal-viewport>
+    <div class="reveal__track" data-reveal-track>
+      <div class="reveal__panel" data-reveal-panel>
+        <ScaleChart t={scale} />
+      </div>
+      <div class="reveal__panel" data-reveal-panel>
+        <button type="button" class="reveal__back" data-reveal-back aria-label={contact.back}>
+          <ArrowLeft size={18} aria-hidden="true" />
+        </button>
+        <SimpleContactForm t={contact} lang={lang} action={action} />
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .reveal {
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .reveal__viewport {
+    overflow: hidden;
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .reveal__track {
+    display: flex;
+    align-items: flex-start;
+    width: 200%;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .reveal.is-revealed .reveal__track {
+    transform: translateX(-50%);
+  }
+
+  .reveal__panel {
+    flex: 0 0 50%;
+    width: 50%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .reveal__back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    margin-bottom: 12px;
+    border-radius: 50%;
+    border: 1px solid var(--color-outline, #e5e5f2);
+    background: #fff;
+    color: var(--color-primary, #00006c);
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+  }
+
+  .reveal__back:hover {
+    border-color: var(--color-secondary, #00c800);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal__viewport,
+    .reveal__track {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  function initReveal(root: HTMLElement) {
+    if (root.dataset.init) return;
+    root.dataset.init = "1";
+
+    const viewport = root.querySelector<HTMLElement>("[data-reveal-viewport]");
+    const panels = Array.from(root.querySelectorAll<HTMLElement>("[data-reveal-panel]"));
+    const cta = root.querySelector<HTMLButtonElement>("#cta-button-graph");
+    const back = root.querySelector<HTMLButtonElement>("[data-reveal-back]");
+    if (!viewport || panels.length < 2) return;
+
+    let step = 0;
+
+    const fitHeight = () => {
+      viewport.style.height = `${panels[step].offsetHeight}px`;
+    };
+
+    const goTo = (n: number) => {
+      step = n;
+      root.classList.toggle("is-revealed", step === 1);
+      fitHeight();
+    };
+
+    cta?.addEventListener("click", () => goTo(1));
+    back?.addEventListener("click", () => goTo(0));
+
+    // The form (panel 2) grows when it shows validation errors / success.
+    root.addEventListener("contactfields:layout", () => {
+      if (step === 1) fitHeight();
+    });
+
+    // Initial sizing (and once web fonts settle, which can change heights).
+    requestAnimationFrame(fitHeight);
+    document.fonts?.ready.then(fitHeight);
+
+    let resizeTimer: number;
+    window.addEventListener("resize", () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(fitHeight, 150);
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>("[data-reveal]").forEach(initReveal);
+  }
+
+  initAll();
+  document.addEventListener("astro:after-swap", initAll);
+</script>
