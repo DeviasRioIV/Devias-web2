@@ -88,7 +88,7 @@ const initial = computeChart(value);
     data-scale-slider
   />
 
-  <button class="w-full bg-primary text-white rounded-full mt-5 py-4 px-6 font-roboto font-semibold text-sm">
+  <button disabled class="opacity-0 transition-opacity duration-1000 w-full bg-primary text-white rounded-full mt-5 py-4 px-6 font-roboto font-semibold text-sm" id="cta-button-graph">
     {t.cta}
   </button>
 </figure>
@@ -379,6 +379,12 @@ const initial = computeChart(value);
       const DURATION = 1000;
       let start: number | null = null;
       let raf = 0;
+
+      const ctaButton = root.querySelector<HTMLButtonElement>("#cta-button-graph");
+      if (ctaButton) {
+        ctaButton.classList.remove("opacity-0");
+        ctaButton.disabled = false;
+      }
 
       // Let the user take over instantly if they grab the slider mid-sweep.
       const cancel = () => cancelAnimationFrame(raf);
