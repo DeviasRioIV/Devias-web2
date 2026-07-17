@@ -61,6 +61,27 @@ const t = getTranslations(lang);
 
   <DiagnosticSteps t={t.diagnosticSteps} />
 
-  <!-- <SimpleContactForm t={t.contact} lang={lang} /> -->
-  <!-- <GridBackground /> -->
+  <div class="relative w-screen py-25 px-2.5 mt-12">
+    <GridBackground />
+
+    <h3 class="flex flex-col">
+      {t.homeTexts.Leaders.map((line, i) => (
+        <span class={`inline max-w-fit font-roboto text-[32px] bg-primary mb-1 px-2 ${i<=1 ? 'text-white' : 'text-secondary font-bold'}`}>{line}</span>
+      ))}
+    </h3>
+  </div>
+
+  <div class='flex flex-col px-2.5 my-12'>
+    <h5 class="font-univia-ultra text-[40px] text-primary uppercase">
+      {t.homeTexts.yourNextDecision.blue}
+    </h5>
+
+    <h5 class="font-univia-ultra text-[40px] text-secondary uppercase">
+      {t.homeTexts.yourNextDecision.green}
+    </h5>
+  </div>
+
+  <div class="px-2.5">
+    <SimpleContactForm t={t.contact} lang={lang} />
+  </div>
 </Layout>

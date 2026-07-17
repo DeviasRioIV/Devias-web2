@@ -48,7 +48,7 @@
       "phone": { "label": "Phone", "placeholder": "93344582" },
       "company": { "label": "Company", "placeholder": "Company name" }
     },
-    "submit": "Send diagnosis",
+    "submit": "I want to scale without friction →",
     "success": "Thanks! We got your diagnosis and we'll reach out soon.",
     "errors": {
       "name": "Enter your name",
@@ -83,20 +83,30 @@
       "of development.",
       "We solve",
       "business problems."
-    ]
+    ],
+    "Leaders": [
+      "leaders who",
+      "decided to get organized",
+      "before growth",
+      "became complicated for them"
+    ],
+    "yourNextDecision": {
+      "blue": "Your next decision is not to grow more.",
+      "green": "It's being able to sustain it."
+    }
   },
   "diagnosticSteps": [
     {
-      "title": "Diagnóstico",
-      "description": "Entendemos tu operación de punta a punta y te mostramos, con datos, dónde están los cuellos de botella."
+      "title": "Diagnostic",
+      "description": "We understand your operation end to end and show you, with data, where the bottlenecks are."
     },
     {
-      "title": "Diseño de solución",
-      "description": "Diseñamos la solución con vos, alineada a cómo opera realmente tu negocio."
+      "title": "Solution design",
+      "description": "We design the solution with you, aligned with how your business really operates."
     },
     {
-      "title": "Desarrollo e implementación",
-      "description": "Construimos lo necesario para que tu operación pueda sostener el crecimiento que ya estás generando."
+      "title": "Development and implementation",
+      "description": "We build what is necessary for your operation to sustain the growth you are already generating."
     }
   ]
 }

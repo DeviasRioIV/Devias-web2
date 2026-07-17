@@ -48,7 +48,7 @@
       "phone": { "label": "Teléfono", "placeholder": "93344582" },
       "company": { "label": "Empresa", "placeholder": "Nombre de la empresa" }
     },
-    "submit": "Enviar diagnóstico",
+    "submit": "Quiero escalar sin fricción",
     "success": "¡Gracias! Recibimos tu diagnóstico y te vamos a contactar pronto.",
     "errors": {
       "name": "Ingresá tu nombre",
@@ -83,7 +83,17 @@
       "de desarrollo.",
       "Resolvemos problemas",
       "de negocio."
-    ]
+    ],
+    "Leaders": [
+      "Líderes que",
+      "decidieron ordenar",
+      "antes de que el crecimiento",
+      "se les complicara"
+    ],
+    "yourNextDecision": {
+      "blue": "Tu próxima decisión no es crecer más.",
+      "green": "Es poder sostenerlo."
+    }
   },
   "diagnosticSteps": [
     {
