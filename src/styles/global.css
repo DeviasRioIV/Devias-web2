@@ -10,3 +10,22 @@
   --color-secondary: #00C800;
   --color-outline: #E5E5F2;
 }
+
+/* Subrayado "a mano" que sigue cada renglón de un texto que hace wrap.
+   Aplicar sobre un elemento INLINE (span, b, mark) que envuelva el texto.
+   El SVG va como background-image (no ::after) y `box-decoration-break: clone`
+   hace que cada línea reciba su propio subrayado. El color va en el SVG:
+   el `#` se codifica como `%23` (si no, corta el data URI). */
+.hand-underline {
+  /* Trazo irregular (amplitudes, base y anchos distintos) sobre un tile ancho
+     de 360px para que la repetición casi no se note. El color va en el SVG:
+     `#` SIEMPRE codificado como `%23`. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='12' viewBox='0 0 360 12'%3E%3Cpath d='M2 7.1 C22 3.8 47 9.6 70 6.2 C92 3.2 115 8.9 146 6 C176 4.4 203 10.3 236 5.9 C266 3.1 295 8.4 327 6.7 C341 5.4 351 7.4 358 6.2' fill='none' stroke='%2300C800' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.95'/%3E%3Cpath d='M4 8.4 C28 6.2 46 10.6 74 8.1 C99 5.7 121 9.6 151 7.7 C181 5.8 206 11 240 7.5 C268 5.2 299 9.1 330 7.7 C342 7 352 8.2 356 7.6' fill='none' stroke='%2300C800' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round' opacity='0.4'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  background-size: auto 11px;
+  /* Espacio debajo del texto para que la onda no toque las letras. */
+  padding-bottom: 0.2em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}

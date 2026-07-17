@@ -56,5 +56,47 @@
       "phone": "Ingresá un teléfono válido",
       "company": "Ingresá el nombre de tu empresa"
     }
-  }
+  },
+  "homeTexts": {
+    "operationalChaosTitle": [
+      "El caos operativo",
+      "no se nota en el balance.",
+      "Pero te está costando",
+      "plata todos los días."
+    ],
+    "notFastProblem": {
+      "noUnderline": "No es un problema que vaya a explotar de golpe.",
+      "underline": "Es uno que se va comiendo tu margen sin que lo veas en ningún reporte."
+    },
+    "growingUpIsNotAProblem": [
+      "El problema",
+      "nunca fue crecer.",
+      "Fue no tener",
+      "con qué sostenerlo."
+    ],
+    "smallSystem": {
+      "noUnderline": "Tu equipo está a la altura. Pero",
+      "underline": "el sistema te quedó chico."
+    },
+    "weDontSellHours": [
+      "No vendemos horas",
+      "de desarrollo.",
+      "Resolvemos problemas",
+      "de negocio."
+    ]
+  },
+  "diagnosticSteps": [
+    {
+      "title": "Diagnóstico",
+      "description": "Entendemos tu operación de punta a punta y te mostramos, con datos, dónde están los cuellos de botella."
+    },
+    {
+      "title": "Diseño de solución",
+      "description": "Diseñamos la solución con vos, alineada a cómo opera realmente tu negocio."
+    },
+    {
+      "title": "Desarrollo e implementación",
+      "description": "Construimos lo necesario para que tu operación pueda sostener el crecimiento que ya estás generando."
+    }
+  ]
 }

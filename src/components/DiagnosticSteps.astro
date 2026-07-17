@@ -1,0 +1,29 @@
+---
+
+type DiagnosticStep = {
+  title: string;
+  description: string;
+}
+
+interface Props {
+  t: DiagnosticStep[];
+}
+
+const { t } = Astro.props;
+---
+
+<section class="flex flex-col gap-[10px] px-[10px]">
+  <!-- steps -->
+  {
+    t.map((step, index) => (
+      <div class="flex gap-2.5" style={{paddingLeft: `${index * 20}px`}}>
+        <span class="font-univia-ultra font-black text-[64px] text-primary leading-[64px]">{index + 1}</span>
+        <!-- card -->
+        <div class="border border-outline rounded-lg p-6">
+          <h4 class="font-univia-ultra uppercase text-[20px] text-primary">{step.title}</h4>
+          <p class="font-roboto-mono text-[16px] text-justify text-black">{step.description}</p>
+        </div>
+      </div>
+    ))
+  }
+</section>
