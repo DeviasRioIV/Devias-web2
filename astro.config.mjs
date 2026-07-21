@@ -30,7 +30,6 @@ export default defineConfig({
       options: {
         variants: [{
           src: ['./src/assets/fonts/UniviaPro/UniviaPro-Regular.otf'],
-          weight: 'normal',
           style: 'normal'
         }]
       }
@@ -42,7 +41,6 @@ export default defineConfig({
       options: {
         variants: [{
           src: ['./src/assets/fonts/UniviaPro/UniviaPro-Ultra.otf'],
-          weight: 'normal',
           style: 'normal'
         }]
       }
@@ -54,7 +52,6 @@ export default defineConfig({
       options: {
         variants: [{
           src: ['./src/assets/fonts/RobotoMono/RobotoMono-VariableFont_wght.ttf'],
-          weight: 'normal',
           style: 'normal'
         }]
       }
@@ -66,7 +63,6 @@ export default defineConfig({
       options: {
         variants: [{
           src: ['./src/assets/fonts/Roboto/Roboto-VariableFont_wdth,wght.ttf'],
-          weight: 'normal',
           style: 'normal'
         }]
       }
