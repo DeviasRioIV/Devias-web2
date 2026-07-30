@@ -1,0 +1,384 @@
+---
+// Animated fluid dot-field background.
+//
+// A grid of dots (halftone-style) whose brightness follows an organic,
+// ever-moving blue "plasma" field. The field is a mix of flowing sine noise
+// and a few drifting metaball centers, so the bright shapes morph and travel
+// without ever looping. Everything is drawn on a single <canvas> at dot
+// resolution, so it stays cheap even fullscreen.
+//
+// Tune with props:
+interface Props {
+  /** Spacing between dots in CSS px (smaller = denser, heavier). */
+  gap?: number;
+  /** Dot radius in CSS px. */
+  dot?: number;
+  /** Animation speed multiplier. */
+  speed?: number;
+  /** Number of drifting bright blobs. */
+  blobs?: number;
+  /** Darkest color (background / low field). */
+  dark?: string;
+  /** Brightest color (peaks of the field). */
+  bright?: string;
+  /** Extra classes for the wrapper. */
+  class?: string;
+}
+
+const {
+  gap = 7,
+  dot = 2,
+  speed = 1,
+  blobs = 4,
+  dark = "#00010a",
+  bright = "#1a35ff",
+  class: className = "",
+} = Astro.props;
+---
+
+<div class={`fluid-canvas ${className}`} aria-hidden="true">
+  <canvas
+    data-gap={gap}
+    data-dot={dot}
+    data-speed={speed}
+    data-blobs={blobs}
+    data-dark={dark}
+    data-bright={bright}></canvas>
+</div>
+
+<style>
+  .fluid-canvas {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #00010a;
+  }
+
+  .fluid-canvas canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+<script>
+  interface DotFieldOptions {
+    gap: number;
+    dot: number;
+    speed: number;
+    blobs: number;
+    dark: [number, number, number];
+    bright: [number, number, number];
+  }
+
+  function hexToRgb(hex: string): [number, number, number] {
+    const h = hex.replace("#", "");
+    const n = parseInt(
+      h.length === 3
+        ? h
+            .split("")
+            .map((c) => c + c)
+            .join("")
+        : h,
+      16,
+    );
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+
+  function startDotField(canvas: HTMLCanvasElement) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return () => {};
+    const c2d = ctx; // non-null alias so nested closures keep the narrowing
+
+    const opts: DotFieldOptions = {
+      gap: Number(canvas.dataset.gap) || 7,
+      dot: Number(canvas.dataset.dot) || 2,
+      speed: Number(canvas.dataset.speed) || 1,
+      blobs: Number(canvas.dataset.blobs) || 4,
+      dark: hexToRgb(canvas.dataset.dark || "#00010a"),
+      bright: hexToRgb(canvas.dataset.bright || "#1a35ff"),
+    };
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let width = 0;
+    let height = 0;
+    // The sim runs on an area larger than what's shown, so the seam where
+    // particles wrap around never lands inside the visible viewport.
+    let marginX = 0;
+    let marginY = 0;
+
+    // Free-flowing particles instead of a fixed grid: `gap` now sets the
+    // *average* spacing, from which we derive how many particles to spawn.
+    const MAX_PARTICLES = 48000;
+    let count = 0;
+    let px = new Float32Array(0); // x position (CSS px)
+    let py = new Float32Array(0); // y position (CSS px)
+
+    // Drifting blob centers (normalized 0..1) that pull brightness toward them.
+    // Each has its own slow orbital motion for organic, non-repeating movement.
+    const centers = Array.from({ length: opts.blobs }, (_, i) => ({
+      phase: (i / opts.blobs) * Math.PI * 2,
+      ox: 0.2 + Math.random() * 0.6,
+      oy: 0.2 + Math.random() * 0.6,
+      rx: 0.18 + Math.random() * 0.22,
+      ry: 0.18 + Math.random() * 0.22,
+      sx: 0.15 + Math.random() * 0.25,
+      sy: 0.12 + Math.random() * 0.22,
+    }));
+
+    function seedParticles() {
+      marginX = width * 0.14;
+      marginY = height * 0.14;
+      const pw = width + marginX * 2;
+      const ph = height + marginY * 2;
+      count = Math.min(
+        MAX_PARTICLES,
+        Math.round((pw * ph) / (opts.gap * opts.gap)),
+      );
+      px = new Float32Array(count);
+      py = new Float32Array(count);
+      for (let i = 0; i < count; i++) {
+        px[i] = -marginX + Math.random() * pw;
+        py[i] = -marginY + Math.random() * ph;
+      }
+      warmUp(); // start already clustered, not flat and uniform
+    }
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = Math.max(1, rect.width);
+      height = Math.max(1, rect.height);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      c2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+      seedParticles();
+    }
+
+    // Smooth flowing noise from summed sines — cheap and seamless.
+    function flow(x: number, y: number, t: number): number {
+      return (
+        Math.sin(x * 3.1 + t * 0.7) * 0.5 +
+        Math.sin(y * 2.7 - t * 0.9) * 0.5 +
+        Math.sin((x + y) * 2.2 + t * 0.6) * 0.5 +
+        Math.sin((x - y) * 3.6 - t * 0.4) * 0.5
+      );
+    }
+
+    // A separate, larger-scale noise gives every point a flow *direction*.
+    // Particles stream along this field, so the cloud is never a rigid grid.
+    function angle(x: number, y: number, t: number): number {
+      return (
+        (Math.sin(x * 1.9 + t * 0.3) +
+          Math.cos(y * 2.3 - t * 0.25) +
+          Math.sin((x + y) * 1.5 + t * 0.2)) *
+        Math.PI
+      );
+    }
+
+    const [dr, dg, db] = opts.dark;
+    const [br, bg, bb] = opts.bright;
+
+    // Pre-compute one color per brightness level so drawing only sets
+    // fillStyle a handful of times per frame and batches every dot into a
+    // single Path2D fill. Plenty of levels -> the gradient reads as smooth,
+    // not stepped, while still keeping the draw calls cheap.
+    const LEVELS = 36;
+    const levelColor: string[] = [];
+    const levelRadius: number[] = [];
+    for (let l = 0; l < LEVELS; l++) {
+      const v = (l + 0.5) / LEVELS;
+      const r = (dr + (br - dr) * v) | 0;
+      const g = (dg + (bg - dg) * v) | 0;
+      const bl = (db + (bb - db) * v) | 0;
+      // Opacity ramps continuously from 0, so dots fade in/out instead of
+      // popping when they cross into darker or brighter regions.
+      const a = Math.min(1, v * 1.35);
+      levelColor.push(`rgba(${r},${g},${bl},${a.toFixed(3)})`);
+      levelRadius.push(opts.dot * (0.3 + v * 1.1)); // brighter -> bigger dot
+    }
+    const bucketX: number[][] = Array.from({ length: LEVELS }, () => []);
+    const bucketY: number[][] = Array.from({ length: LEVELS }, () => []);
+
+    // Compute the shaped brightness (0..1) of the field at a screen point.
+    function brightnessAt(nx: number, ny: number, t: number, cx: number[], cy: number[], aspect: number): number {
+      let field = 0;
+      for (let b = 0; b < cx.length; b++) {
+        const ddx = (nx - cx[b]) * aspect;
+        const ddy = ny - cy[b];
+        field += 0.09 / (ddx * ddx + ddy * ddy + 0.05);
+      }
+      field += flow(nx, ny, t) * 0.6 + 0.6;
+      let v = field * 0.5;
+      return v <= 0 ? 0 : v >= 1 ? 1 : v * v * (3 - 2 * v);
+    }
+
+    // Blob centers for a given time, written into reused arrays.
+    const cx: number[] = [];
+    const cy: number[] = [];
+    function blobsAt(t: number) {
+      cx.length = 0;
+      cy.length = 0;
+      for (const c of centers) {
+        cx.push(c.ox + Math.cos(t * c.sx + c.phase) * c.rx);
+        cy.push(c.oy + Math.sin(t * c.sy + c.phase) * c.ry);
+      }
+    }
+
+    // Advance every particle one step (no drawing). Split from the draw so we
+    // can "warm up" the sim off-screen and start already clustered.
+    function stepParticles(t: number, dt: number) {
+      blobsAt(t);
+      const aspect = width / height;
+      const FLOW = 55 * opts.speed; // base streaming speed (px/s)
+      const loX = -marginX;
+      const spanX = width + marginX * 2;
+      const loY = -marginY;
+      const spanY = height + marginY * 2;
+
+      for (let i = 0; i < count; i++) {
+        const v = brightnessAt(px[i] / width, py[i] / height, t, cx, cy, aspect);
+
+        // Concentration mechanism: fast where dark, slow where bright, so
+        // particles pile up in the intense regions (like traffic slowing).
+        const spd = FLOW * (0.12 + (1 - v) * (1 - v)) * dt;
+        const a = angle((px[i] / width) * 3, (py[i] / height) * 3, t) +
+          (Math.random() - 0.5) * 0.6;
+        let x = px[i] + Math.cos(a) * spd;
+        let y = py[i] + Math.sin(a) * spd;
+
+        // Wrap within the padded area — the seam stays off-screen.
+        if (x < loX) x += spanX;
+        else if (x >= loX + spanX) x -= spanX;
+        if (y < loY) y += spanY;
+        else if (y >= loY + spanY) y -= spanY;
+
+        // Relocate ONLY near-invisible particles (dark regions), so the jump
+        // is never seen, keeping dark voids populated without any blinking.
+        if (v < 0.05 && Math.random() < 0.02) {
+          x = loX + Math.random() * spanX;
+          y = loY + Math.random() * spanY;
+        }
+
+        px[i] = x;
+        py[i] = y;
+      }
+    }
+
+    function drawParticles(t: number) {
+      c2d.clearRect(0, 0, width, height);
+      for (let l = 0; l < LEVELS; l++) {
+        bucketX[l].length = 0;
+        bucketY[l].length = 0;
+      }
+
+      blobsAt(t);
+      const aspect = width / height;
+
+      for (let i = 0; i < count; i++) {
+        const x = px[i];
+        const y = py[i];
+        // Only the visible window is drawn; the padded margin is skipped.
+        if (x < -4 || x > width + 4 || y < -4 || y > height + 4) continue;
+
+        const v = brightnessAt(x / width, y / height, t, cx, cy, aspect);
+        if (v < 0.012) continue; // truly invisible: skip drawing entirely
+        let l = (v * LEVELS) | 0;
+        if (l >= LEVELS) l = LEVELS - 1;
+        bucketX[l].push(x);
+        bucketY[l].push(y);
+      }
+
+      // One fillStyle + one Path2D fill per brightness level.
+      for (let l = 0; l < LEVELS; l++) {
+        const xs = bucketX[l];
+        if (xs.length === 0) continue;
+        const ys = bucketY[l];
+        const r = levelRadius[l];
+        const path = new Path2D();
+        for (let k = 0; k < xs.length; k++) {
+          path.moveTo(xs[k] + r, ys[k]);
+          path.arc(xs[k], ys[k], r, 0, Math.PI * 2);
+        }
+        c2d.fillStyle = levelColor[l];
+        c2d.fill(path);
+      }
+    }
+
+    // Advance the sim ~3s off-screen so clusters have already formed by the
+    // first painted frame (ending near t=0, the field the first frame shows).
+    function warmUp() {
+      const dt = 0.05;
+      const steps = 60;
+      for (let k = 0; k < steps; k++) {
+        stepParticles((k + 1 - steps) * dt * opts.speed, dt);
+      }
+    }
+
+    let raf = 0;
+    let running = true;
+    const t0 = performance.now();
+    let last = t0;
+
+    function frame(now: number) {
+      if (!running) return;
+      const t = ((now - t0) / 1000) * opts.speed;
+      let dt = (now - last) / 1000;
+      last = now;
+      if (dt > 0.05) dt = 0.05; // clamp after tab-switches / stalls
+      stepParticles(t, dt);
+      drawParticles(t);
+      raf = requestAnimationFrame(frame);
+    }
+
+    resize(); // seeds + warms up the sim
+
+    if (reduce) {
+      drawParticles(0); // single static (already-clustered) frame
+    } else {
+      raf = requestAnimationFrame(frame);
+    }
+
+    let resizeTimer = 0;
+    const onResize = () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(resize, 150);
+    };
+    window.addEventListener("resize", onResize);
+
+    // Pause when off-screen / tab hidden to save the battery.
+    const io = new IntersectionObserver((entries) => {
+      const visible = entries[0]?.isIntersecting ?? true;
+      if (visible && !reduce && !running) {
+        running = true;
+        raf = requestAnimationFrame(frame);
+      } else if (!visible) {
+        running = false;
+        cancelAnimationFrame(raf);
+      }
+    });
+    io.observe(canvas);
+
+    // Cleanup handle.
+    return () => {
+      running = false;
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+      io.disconnect();
+    };
+  }
+
+  const cleanups: Array<() => void> = [];
+
+  function initFluidCanvases() {
+    // Tear down any previous instances (view transitions).
+    while (cleanups.length) cleanups.pop()?.();
+    document
+      .querySelectorAll<HTMLCanvasElement>(".fluid-canvas canvas")
+      .forEach((c) => cleanups.push(startDotField(c)));
+  }
+
+  initFluidCanvases();
+  document.addEventListener("astro:after-swap", initFluidCanvases);
+</script>

@@ -1,0 +1,33 @@
+---
+// Temporary demo page for FluidCanvas — visit /es/fluid-demo or /en/fluid-demo
+import FluidCanvas from '../../components/FluidCanvas.astro';
+
+export function getStaticPaths() {
+  return [{ params: { lang: 'es' } }, { params: { lang: 'en' } }];
+}
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FluidCanvas demo</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #00010a; }
+      .stage { position: relative; width: 100vw; height: 100vh; }
+      .stage h1 {
+        position: absolute; inset: 0; margin: 0;
+        display: grid; place-items: center;
+        color: #fff; font-family: system-ui, sans-serif;
+        font-size: clamp(2rem, 6vw, 5rem); letter-spacing: -0.02em;
+        text-shadow: 0 2px 40px rgba(0,0,0,.6); pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <FluidCanvas />
+      <!-- <h1>FluidCanvas</h1> -->
+    </div>
+  </body>
+</html>
