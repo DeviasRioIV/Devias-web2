@@ -88,7 +88,7 @@ const initial = computeChart(value);
     data-scale-slider
   />
 
-  <button disabled class="opacity-0 transition-opacity duration-1000 w-full bg-primary text-white rounded-full mt-5 py-4 px-6 font-roboto font-semibold text-sm" id="cta-button-graph">
+  <button disabled class="opacity-0 transition-opacity duration-1000 w-full bg-primary text-white rounded-full mt-5 py-4 px-6 font-roboto font-semibold text-sm md:block md:max-w-97.5 md:mx-auto md:mt-8 md:text-[15px]" id="cta-button-graph">
     {t.cta}
   </button>
 </figure>
@@ -98,6 +98,9 @@ const initial = computeChart(value);
     --company: var(--color-primary, #00006c);
     --system: var(--color-secondary, #00c800);
     --pulse: rgba(0, 200, 0, 0.45);
+    /* Pin dot diameter. Read by the layout (the dot is centred on the curve
+       with a negative margin of half this value) and bumped up on desktop. */
+    --dot: 9px;
 
     width: 100%;
     max-width: 600px;
@@ -194,6 +197,9 @@ const initial = computeChart(value);
     align-items: center;
     z-index: 2;
     max-width: 38cqw;
+    /* `bottom` points at the curve; pull down half a dot so the dot is centred
+       on the line instead of resting on top of it. */
+    margin-bottom: calc(var(--dot) / -2);
   }
 
   .pin__chip {
@@ -225,8 +231,8 @@ const initial = computeChart(value);
   }
 
   .pin__dot {
-    width: 9px;
-    height: 9px;
+    width: var(--dot);
+    height: var(--dot);
     border-radius: 50%;
     background: #c9c7b9;
     margin-top: -2px;
@@ -315,6 +321,86 @@ const initial = computeChart(value);
     cursor: pointer;
   }
 
+  /* --- Desktop (md: 768px) ------------------------------------------------ */
+
+  @media (min-width: 768px) {
+    .scale-chart {
+      --dot: 18px;
+      max-width: 1080px;
+      /* Ojo: el padding lateral no es decorativo — los markers de los extremos
+         se centran sobre x=0 y x=100%, y el viewport del reveal recorta lo que
+         se pase del ancho. Sin padding, el punto final queda cortado al medio. */
+      padding-inline: 12px;
+    }
+
+    .scale-chart__hint {
+      font-size: 14px;
+      text-align: center;
+    }
+
+    /* Plot más alto: el SVG se estira (preserveAspectRatio="none") y el script
+       le pasa su altura real a computeChart(), así los pines siguen la curva. */
+    .scale-chart__plot {
+      height: 400px;
+      margin-bottom: 16px;
+    }
+
+    .scale-chart__svg {
+      height: 330px;
+    }
+
+    .line-company,
+    .line-system {
+      stroke-width: 2.5;
+    }
+
+    .marker {
+      width: 16px;
+      height: 16px;
+    }
+
+    .pin {
+      max-width: 220px;
+    }
+
+    .pin__chip {
+      font-size: 15px;
+      border-radius: 12px;
+      padding: 10px 18px;
+      margin-bottom: 10px;
+    }
+
+    .pin.is-active .pin__dot {
+      box-shadow: 0 0 0 8px rgba(0, 200, 0, 0.19);
+    }
+
+    .scale-chart__legend {
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .scale-chart__slider {
+      height: 6px;
+      border-radius: 3px;
+      margin-top: 20px;
+    }
+
+    .scale-chart__slider::-moz-range-progress {
+      height: 6px;
+      border-radius: 3px;
+    }
+
+    .scale-chart__slider::-webkit-slider-thumb {
+      width: 22px;
+      height: 22px;
+    }
+
+    .scale-chart__slider::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .pin__chip,
     .pin__pole,
@@ -340,15 +426,31 @@ const initial = computeChart(value);
 
   function initScaleChart(root: HTMLElement) {
     const slider = root.querySelector<HTMLInputElement>("[data-scale-slider]");
+    const svg = root.querySelector<SVGSVGElement>(".scale-chart__svg");
     const controlPath = root.querySelector<SVGPathElement>("[data-control-path]");
     const markerCompany = root.querySelector<HTMLElement>("[data-marker-company]");
     const markerSystem = root.querySelector<HTMLElement>("[data-marker-system]");
+    const plot = root.querySelector<HTMLElement>(".scale-chart__plot");
     const pins = Array.from(root.querySelectorAll<HTMLElement>(".pin"));
 
     if (!slider || !controlPath || !markerCompany || !markerSystem) return;
 
+    // The SVG stretches, and it is taller on desktop, so every px coordinate is
+    // derived from its rendered height instead of the 150px CSS default.
+    const svgHeight = () => svg?.getBoundingClientRect().height || undefined;
+
+    // Height of everything in a pin that is *not* the pole (chip + its margin +
+    // dot). Used to keep the chip inside the plot; only changes on resize, so
+    // it is measured once per layout instead of on every drag frame.
+    let nonPole: number[] | null = null;
+    const measureNonPole = () =>
+      pins.map((el) => {
+        const pole = el.querySelector<HTMLElement>(".pin__pole");
+        return el.offsetHeight - (pole?.offsetHeight ?? 0);
+      });
+
     function render(value: number) {
-      const state = computeChart(value);
+      const state = computeChart(value, svgHeight());
 
       slider!.style.setProperty("--fill", `${value}%`);
       controlPath!.setAttribute("d", state.controlPath);
@@ -357,6 +459,9 @@ const initial = computeChart(value);
       markerSystem!.style.left = `${state.markerLeftPct}%`;
       markerSystem!.style.bottom = `${state.markerControlBottom}px`;
 
+      if (!nonPole) nonPole = measureNonPole();
+      const plotHeight = plot?.offsetHeight ?? 0;
+
       state.pins.forEach((pin, i) => {
         const el = pins[i];
         if (!el) return;
@@ -364,11 +469,33 @@ const initial = computeChart(value);
         // Follow the curve as it reshapes with the slider.
         el.style.bottom = `${pin.dotBottom}px`;
         const pole = el.querySelector<HTMLElement>(".pin__pole");
-        if (pole) pole.style.height = `${pin.poleHeight}px`;
+        if (!pole) return;
+        // The staircase of pole heights is scaled with the plot, so on tall
+        // (desktop) plots the last pins would push their chip past the top edge
+        // — and the reveal's viewport clips it. Cap each pole at the room left
+        // above its dot.
+        const room = plotHeight - pin.dotBottom - (nonPole![i] ?? 0);
+        pole.style.height = `${Math.max(3, Math.min(pin.poleHeight, room))}px`;
       });
     }
 
     slider.addEventListener("input", () => render(Number(slider.value)));
+
+    // Crossing the md breakpoint changes the plot height: re-derive positions.
+    let resizeTimer: number;
+    window.addEventListener("resize", () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        nonPole = null; // los chips pueden cambiar de alto (font-size, wrap)
+        render(Number(slider.value));
+      }, 150);
+    });
+
+    // Los chips se miden con la tipografía final.
+    document.fonts?.ready.then(() => {
+      nonPole = null;
+      render(Number(slider.value));
+    });
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 

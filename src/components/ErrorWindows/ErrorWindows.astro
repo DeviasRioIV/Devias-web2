@@ -11,12 +11,19 @@ import { AlertTriangle } from "@lucide/astro";
 interface Props {
   /** One message per window, in stacking order (bottom to top). */
   t: { windows: string[] };
+  /**
+   * Section heading, one line per rendered box. Only shown from `md` up, where
+   * it lives inside the stage (on mobile the page renders it above the block).
+   */
+  title?: string[];
 }
 
-const { t } = Astro.props;
+const { t, title = [] } = Astro.props;
 
 // Fixed layout for each window: position + size (as % of the stage) and the
 // stagger delay for its entrance. Paired with the messages from i18n.
+// Mobile stacks them almost full-width; desktop tucks a smaller, tighter
+// cascade into the right half so the heading can breathe on the left.
 const LAYOUT = [
   { left: 3, top: 2.5, width: 65, delay: 0.05 },
   { left: 33, top: 24, width: 64, delay: 0.35 },
@@ -25,7 +32,19 @@ const LAYOUT = [
   { left: 15, top: 81, width: 64, delay: 1.25 },
 ];
 
-const windows = LAYOUT.map((layout, i) => ({ ...layout, message: t.windows[i] }));
+const LAYOUT_MD = [
+  { left: 40, top: 15, width: 28 },
+  { left: 53, top: 29, width: 28 },
+  { left: 66, top: 42.5, width: 28 },
+  { left: 53, top: 55, width: 28 },
+  { left: 40, top: 68, width: 28 },
+];
+
+const windows = LAYOUT.map((layout, i) => ({
+  ...layout,
+  md: LAYOUT_MD[i],
+  message: t.windows[i],
+}));
 ---
 
 <div class="error-windows h-screen" data-error-windows>
@@ -33,10 +52,20 @@ const windows = LAYOUT.map((layout, i) => ({ ...layout, message: t.windows[i] })
     <canvas class="stage__blobs w-full" data-blob-canvas aria-hidden="true"></canvas>
 
     {
+      title.length > 0 && (
+        <h3 class="stage__title">
+          {title.map((line) => (
+            <span>{line}</span>
+          ))}
+        </h3>
+      )
+    }
+
+    {
       windows.map((win, i) => (
         <div
           class="window"
-          style={`left:${win.left}%; top:${win.top}%; width:${win.width}%; z-index:${i + 1}; --appear-delay:${win.delay}s;`}
+          style={`--l:${win.left}%; --t:${win.top}%; --w:${win.width}%; --l-md:${win.md.left}%; --t-md:${win.md.top}%; --w-md:${win.md.width}%; z-index:${i + 1}; --appear-delay:${win.delay}s;`}
         >
           <div class="window__bar">
             <AlertTriangle class="window__icon" size={18} aria-hidden="true" />
@@ -106,9 +135,19 @@ const windows = LAYOUT.map((layout, i) => ({ ...layout, message: t.windows[i] })
 
   /* --- Windows ----------------------------------------------------------- */
 
+  /* Título dentro del stage: solo desktop. En mobile lo renderiza la página
+     arriba del bloque. Va después del canvas y sin z-index, así queda sobre el
+     fondo dithered pero debajo de las ventanas (que sí lo tienen). */
+  .stage__title {
+    display: none;
+  }
+
   .window {
     position: absolute;
     box-sizing: border-box;
+    left: var(--l);
+    top: var(--t);
+    width: var(--w);
     background: #fff;
     border: 2px solid var(--ink);
     touch-action: none;
@@ -153,7 +192,7 @@ const windows = LAYOUT.map((layout, i) => ({ ...layout, message: t.windows[i] })
   }
 
   .window__body {
-    padding: clamp(16px, 5cqw, 28px);
+    padding:24px;
   }
 
   .window__body p {
@@ -177,6 +216,45 @@ const windows = LAYOUT.map((layout, i) => ({ ...layout, message: t.windows[i] })
   .error-windows.is-visible .window {
     animation: window-appear 0.62s cubic-bezier(0.2, 0.9, 0.35, 1.15) both;
     animation-delay: var(--appear-delay, 0s);
+  }
+
+  /* --- Desktop (md: 768px) ----------------------------------------------- */
+
+  @media (min-width: 768px) {
+    .stage__title {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      position: absolute;
+      left: 13%;
+      top: 50%;
+      transform: translateY(-50%);
+      margin: 0;
+    }
+
+    .stage__title span {
+      background: var(--ink);
+      color: #fff;
+      font-family: var(--font-roboto, sans-serif);
+      font-size: clamp(22px, 2.5cqw, 40px);
+      font-weight: 400;
+      line-height: 1.3;
+      padding: 0 8px;
+      margin-bottom: 4px;
+      text-wrap: nowrap;
+    }
+
+    /* Los dos últimos renglones van en verde y bold. */
+    .stage__title span:nth-child(n + 3) {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .window {
+      left: var(--l-md);
+      top: var(--t-md);
+      width: var(--w-md);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

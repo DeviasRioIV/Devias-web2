@@ -1,6 +1,14 @@
 {
   "header": {
-    "menu": "Menu"
+    "menu": "Menu",
+    "close": "Close menu",
+    "nav": [
+      { "label": "About us", "href": "#" },
+      { "label": "Problems", "href": "#operational-chaos" },
+      { "label": "How we work", "href": "#we-dont-sell-hours" },
+      { "label": "Real cases", "href": "#our-clients" }
+    ],
+    "cta": "I want to scale<br>without friction"
   },
   "hero": {
     "title": "Business first",
@@ -27,6 +35,7 @@
     ]
   },
   "contact": {
+    "eyebrow": "Diagnostic",
     "sectionTitle": "Do you recognize this in your company?",
     "step2Title": "Diagnosis — Step 2",
     "signals": [

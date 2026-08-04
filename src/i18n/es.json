@@ -1,6 +1,14 @@
 {
   "header": {
-    "menu": "Menú"
+    "menu": "Menú",
+    "close": "Cerrar menú",
+    "nav": [
+      { "label": "Nosotros", "href": "#" },
+      { "label": "Problemas", "href": "#operational-chaos" },
+      { "label": "Cómo trabajamos", "href": "#we-dont-sell-hours" },
+      { "label": "Casos reales", "href": "#our-clients" }
+    ],
+    "cta": "Quiero escalar<br>sin fricción"
   },
   "hero": {
     "title": "Business first",
@@ -28,6 +36,7 @@
   },
   "contact": {
     "sectionTitle": "¿Reconoces esto en tu empresa?",
+    "eyebrow": "Diagnóstico",
     "step2Title": "Diagnóstico — Paso 2",
     "signals": [
       "Todo depende de un Excel que solo dos personas entienden",

@@ -1,51 +1,42 @@
 ---
 import {ArrowRight} from "@lucide/astro";
-import FluidCanvas from './FluidCanvas.astro';
-
 const { t } = Astro.props;
 ---
 
-<section class="flex flex-col items-center justify-center gap-2.5 px-2.5 text-center">
-  <div class="w-full relative aspect-square bg-[url('/images/blue-dither-bg.webp')] rounded-lg"
-  style="background: transparent;">
-
-    <div class="-z-10 absolute inset-0 w-full h-full rounded-lg overflow-hidden">
-      <FluidCanvas />
-    </div>
-
+<section class="grid grid-cols-2 gap-2 px-2.5 text-center md:max-w-6xl md:h-88.5 md:flex-row md:px-5 md:grid-cols-[1fr_205px] md:mx-auto">
+  <div class="col-span-2 relative aspect-square bg-[url('/images/blue-dither-bg.webp')] rounded-lg md:aspect-auto md:col-span-1 md:row-span-2">
     <div class="flex flex-col z-20 w-full h-full p-6 pt-12 justify-between">
       <div class="flex flex-col items-start">
-        <h2 class="text-[40px] font-univia-ultra text-white uppercase text-start">
+        <h2 class="text-[40px] md:text-[64px] font-univia-ultra text-white uppercase text-start">
           {t.title}
         </h2>
-        <h3 class="text-[40px] font-univia-regular text-secondary uppercase">
+        <h3 class="text-[40px] md:text-[64px] font-univia-regular text-secondary uppercase">
           {t.subtitle}
         </h3>
       </div>
 
-      <p class="text-xl font-roboto-mono text-white text-justify">
+      <p class="text-xl font-roboto-mono text-white text-justify md:max-w-147.5 md:text-2xl">
         {t.description}
       </p>
     </div>
   </div>
 
-  <div class="grid grid-cols-2 gap-1.5 w-full">
-    <button class="h-38.5 bg-secondary rounded-lg p-6 flex flex-col justify-between">
 
-      <div class="flex justify-end">
-        <ArrowRight class="text-primary" />
-      </div>
+  <button class="h-38.5 bg-secondary rounded-lg p-6 flex flex-col justify-between md:h-full cursor-pointer">
 
-      <p class="text-primary text-xl font-roboto text-start" set:html={t.ctaEvaluate} />
-    </button>
+    <div class="flex justify-end">
+      <ArrowRight class="text-primary" />
+    </div>
 
-    <button class="h-38.5 bg-primary rounded-lg p-6 flex flex-col justify-between">
+    <p class="text-primary text-xl font-roboto text-start" set:html={t.ctaEvaluate} />
+  </button>
 
-      <div class="flex justify-end">
-        <ArrowRight class="text-white" />
-      </div>
+  <button class="h-38.5 bg-primary rounded-lg p-6 flex flex-col justify-between md:h-full cursor-pointer">
 
-      <p class="text-white text-xl font-roboto text-start" set:html={t.ctaHowItWorks} />
-    </button>
-  </div>
+    <div class="flex justify-end">
+      <ArrowRight class="text-white" />
+    </div>
+
+    <p class="text-white text-xl font-roboto text-start" set:html={t.ctaHowItWorks} />
+  </button>
 </section>

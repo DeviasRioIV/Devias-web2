@@ -20,7 +20,7 @@ interface Props {
 const { scale, contact, lang = "es", action } = Astro.props;
 ---
 
-<div class="reveal px-2.5" data-reveal>
+<div class="reveal px-2.5 md:p-0 md:mx-auto" data-reveal>
   <div class="reveal__viewport" data-reveal-viewport>
     <div class="reveal__track" data-reveal-track>
       <div class="reveal__panel" data-reveal-panel>
@@ -30,7 +30,7 @@ const { scale, contact, lang = "es", action } = Astro.props;
         <button type="button" class="reveal__back" data-reveal-back aria-label={contact.back}>
           <ArrowLeft size={18} aria-hidden="true" />
         </button>
-        <SimpleContactForm t={contact} lang={lang} action={action} />
+        <SimpleContactForm t={contact} lang={lang} action={action} shadow={false} />
       </div>
     </div>
   </div>
@@ -40,6 +40,14 @@ const { scale, contact, lang = "es", action } = Astro.props;
   .reveal {
     width: 100%;
     max-width: 600px;
+  }
+
+  /* En desktop el gráfico crece bastante; el form del paso 2 ya se centra solo
+     dentro del panel (tiene su propio max-width). */
+  @media (min-width: 768px) {
+    .reveal {
+      max-width: 1080px;
+    }
   }
 
   .reveal__viewport {

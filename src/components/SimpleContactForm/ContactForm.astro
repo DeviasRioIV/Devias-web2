@@ -21,6 +21,8 @@ interface ContactText {
 }
 
 interface Props {
+  shadow: boolean;
+
   t: ContactText;
   /** Optional heading shown above the fields. */
   title?: string;
@@ -30,25 +32,23 @@ interface Props {
   lang?: string;
 }
 
-const { t, title, action, lang = "es" } = Astro.props;
+const { t, title, action, lang = "es", shadow = true } = Astro.props;
 ---
 
-<div class="simple-contact">
+<div class="simple-contact w-full max-w-110 md:max-w-205 md:mx-auto" style={{boxShadow: shadow ? "0px 4px 100px 0px #00000026" : "none"}}>
   {title && <h2 class="simple-contact__title">{title}</h2>}
   <ContactFields t={t} lang={lang} action={action} variant="light" />
 </div>
 
 <style>
   .simple-contact {
-    width: 100%;
-    max-width: 440px;
     margin: 0 auto;
     box-sizing: border-box;
     background: #fff;
     border: 1px solid var(--color-outline, #e5e5f2);
     border-radius: 8px;
     padding: clamp(20px, 5vw, 32px);
-    box-shadow: 0 24px 60px -32px rgba(0, 0, 108, 0.25);
+
   }
 
   .simple-contact__title {

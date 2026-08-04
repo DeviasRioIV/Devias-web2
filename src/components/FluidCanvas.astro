@@ -1,17 +1,19 @@
 ---
 // Animated fluid dot-field background.
 //
-// A grid of dots (halftone-style) whose brightness follows an organic,
-// ever-moving blue "plasma" field. The field is a mix of flowing sine noise
-// and a few drifting metaball centers, so the bright shapes morph and travel
-// without ever looping. Everything is drawn on a single <canvas> at dot
-// resolution, so it stays cheap even fullscreen.
+// Thousands of small squares stream along a slow flow field and gather
+// (loosely) where a drifting blue "plasma" field is brightest, so the picture
+// morphs and travels without ever looping. The concentration is deliberately
+// gentle and diffuse — particles never fully stop and keep a little random
+// wander — so they form broad soft clouds instead of collapsing into thin
+// razor lines. Everything is drawn on one <canvas>, batched by brightness
+// level, so it stays cheap even fullscreen.
 //
 // Tune with props:
 interface Props {
-  /** Spacing between dots in CSS px (smaller = denser, heavier). */
+  /** Average spacing between squares in CSS px (smaller = denser, heavier). */
   gap?: number;
-  /** Dot radius in CSS px. */
+  /** Base square size in CSS px (grows with brightness). */
   dot?: number;
   /** Animation speed multiplier. */
   speed?: number;
@@ -156,7 +158,9 @@ const {
       seedParticles();
     }
 
-    // Smooth flowing noise from summed sines — cheap and seamless.
+    // Smooth flowing noise from summed sines — cheap and seamless. Kept at a
+    // moderate amplitude so the field undulates without harsh, over-pronounced
+    // waves.
     function flow(x: number, y: number, t: number): number {
       return (
         Math.sin(x * 3.1 + t * 0.7) * 0.5 +
@@ -166,8 +170,8 @@ const {
       );
     }
 
-    // A separate, larger-scale noise gives every point a flow *direction*.
-    // Particles stream along this field, so the cloud is never a rigid grid.
+    // A larger-scale noise gives every point a flow *direction*. Particles
+    // stream along this field, so the cloud is never a rigid grid.
     function angle(x: number, y: number, t: number): number {
       return (
         (Math.sin(x * 1.9 + t * 0.3) +
@@ -181,7 +185,7 @@ const {
     const [br, bg, bb] = opts.bright;
 
     // Pre-compute one color per brightness level so drawing only sets
-    // fillStyle a handful of times per frame and batches every dot into a
+    // fillStyle a handful of times per frame and batches every square into a
     // single Path2D fill. Plenty of levels -> the gradient reads as smooth,
     // not stepped, while still keeping the draw calls cheap.
     const LEVELS = 36;
@@ -192,16 +196,18 @@ const {
       const r = (dr + (br - dr) * v) | 0;
       const g = (dg + (bg - dg) * v) | 0;
       const bl = (db + (bb - db) * v) | 0;
-      // Opacity ramps continuously from 0, so dots fade in/out instead of
+      // Opacity ramps continuously from 0, so squares fade in/out instead of
       // popping when they cross into darker or brighter regions.
       const a = Math.min(1, v * 1.35);
       levelColor.push(`rgba(${r},${g},${bl},${a.toFixed(3)})`);
-      levelRadius.push(opts.dot * (0.3 + v * 1.1)); // brighter -> bigger dot
+      levelRadius.push(opts.dot * (0.3 + v * 1.1)); // brighter -> bigger square
     }
     const bucketX: number[][] = Array.from({ length: LEVELS }, () => []);
     const bucketY: number[][] = Array.from({ length: LEVELS }, () => []);
 
     // Compute the shaped brightness (0..1) of the field at a screen point.
+    // Round metaball falloffs give BROAD maxima (an area, not a thin ridge),
+    // which is what keeps the concentration from pinching into razor lines.
     function brightnessAt(nx: number, ny: number, t: number, cx: number[], cy: number[], aspect: number): number {
       let field = 0;
       for (let b = 0; b < cx.length; b++) {
@@ -209,7 +215,7 @@ const {
         const ddy = ny - cy[b];
         field += 0.09 / (ddx * ddx + ddy * ddy + 0.05);
       }
-      field += flow(nx, ny, t) * 0.6 + 0.6;
+      field += flow(nx, ny, t) * 0.45 + 0.6;
       let v = field * 0.5;
       return v <= 0 ? 0 : v >= 1 ? 1 : v * v * (3 - 2 * v);
     }
@@ -231,7 +237,7 @@ const {
     function stepParticles(t: number, dt: number) {
       blobsAt(t);
       const aspect = width / height;
-      const FLOW = 55 * opts.speed; // base streaming speed (px/s)
+      const FLOW = 52 * opts.speed; // base streaming speed (px/s)
       const loX = -marginX;
       const spanX = width + marginX * 2;
       const loY = -marginY;
@@ -240,11 +246,17 @@ const {
       for (let i = 0; i < count; i++) {
         const v = brightnessAt(px[i] / width, py[i] / height, t, cx, cy, aspect);
 
-        // Concentration mechanism: fast where dark, slow where bright, so
-        // particles pile up in the intense regions (like traffic slowing).
-        const spd = FLOW * (0.12 + (1 - v) * (1 - v)) * dt;
-        const a = angle((px[i] / width) * 3, (py[i] / height) * 3, t) +
-          (Math.random() - 0.5) * 0.6;
+        // Gentle concentration: particles slow down in bright regions but
+        // NEVER stop (high floor, linear response), so they keep flowing
+        // through instead of piling permanently onto the peak -> broad soft
+        // clouds, not thin lines.
+        const spd = FLOW * (0.35 + (1 - v) * 0.65) * dt;
+        // Streaming direction + a healthy dose of random wander. The wander
+        // spreads particles ACROSS the bright band (diffusion), which is the
+        // other half of what stops them collapsing into a 1px crest.
+        const a =
+          angle((px[i] / width) * 3, (py[i] / height) * 3, t) +
+          (Math.random() - 0.5) * 0.9;
         let x = px[i] + Math.cos(a) * spd;
         let y = py[i] + Math.sin(a) * spd;
 
@@ -295,11 +307,11 @@ const {
         const xs = bucketX[l];
         if (xs.length === 0) continue;
         const ys = bucketY[l];
-        const r = levelRadius[l];
+        const r = levelRadius[l]; // half-side of the square
+        const side = r * 2;
         const path = new Path2D();
         for (let k = 0; k < xs.length; k++) {
-          path.moveTo(xs[k] + r, ys[k]);
-          path.arc(xs[k], ys[k], r, 0, Math.PI * 2);
+          path.rect(xs[k] - r, ys[k] - r, side, side);
         }
         c2d.fillStyle = levelColor[l];
         c2d.fill(path);
@@ -352,6 +364,7 @@ const {
       const visible = entries[0]?.isIntersecting ?? true;
       if (visible && !reduce && !running) {
         running = true;
+        last = performance.now();
         raf = requestAnimationFrame(frame);
       } else if (!visible) {
         running = false;

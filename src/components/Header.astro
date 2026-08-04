@@ -1,5 +1,5 @@
 ---
-import {Menu} from "@lucide/astro";
+import {Menu, X, ArrowRight} from "@lucide/astro";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
 const { lang = "es", t } = Astro.props;
@@ -7,12 +7,26 @@ const { lang = "es", t } = Astro.props;
 const esUrl = getRelativeLocaleUrl("es", "");
 const enUrl = getRelativeLocaleUrl("en", "");
 const activeClass = "bg-primary text-white";
+const navLinks = t?.nav ?? [];
 ---
 
-<header class="flex justify-between items-center p-6">
+<header class="flex justify-between items-center p-6 max-w-265 mx-auto md:p-6">
   <a href={getRelativeLocaleUrl(lang, "")} class="h-12.5">
     <img src="/logos/logo-devias.svg" alt="Logo Devias" class="h-full" />
   </a>
+
+  <nav class="hidden md:block">
+    <ul class="flex gap-4 items-center">
+      {navLinks.map((link) => (
+        <li>
+          <a href={link.href} class="flex flex-col group overflow-hidden font-roboto text-base text-[#606060] hover:text-primary hover:font-bold">
+            {link.label}
+            <span class='inline-block w-5 h-2 bg-secondary -translate-x-full group-hover:translate-x-0 transition'/>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
 
   <div class="flex gap-4 items-center">
     <div class="border border-outline rounded-md p-1 flex items-center">
@@ -20,8 +34,141 @@ const activeClass = "bg-primary text-white";
       <a href={enUrl} class:list={["font-roboto-mono text-[12px] py-1 px-3 rounded-sm text-[#666666] font-bold", lang === "en" && activeClass]}>EN</a>
     </div>
 
-    <button class="w-8 h-8 border border-outline rounded-full grid place-content-center" aria-label={t?.menu}>
+    <button
+      type="button"
+      data-menu-open
+      aria-controls="mobile-menu"
+      aria-expanded="false"
+      aria-label={t?.menu}
+      class="w-8 h-8 border border-outline rounded-full grid place-content-center md:hidden"
+    >
       <Menu class="w-4 h-4 text-black" />
     </button>
   </div>
 </header>
+
+{/* Sidebar mobile: entra desde la izquierda. `invisible` evita que capture
+    clicks/foco mientras está cerrado; el delay lo saca recién al terminar la
+    animación de salida. */}
+<div
+  id="mobile-menu"
+  data-menu-root
+  class="fixed inset-0 z-50 invisible transition-[visibility] duration-300 delay-300 md:hidden"
+>
+  <div data-menu-backdrop class="absolute inset-0 bg-primary/25 opacity-0 transition-opacity duration-300"></div>
+
+  <aside
+    data-menu-panel
+    class="absolute inset-y-0 left-0 w-full max-w-140 bg-white flex flex-col -translate-x-full transition-transform duration-300 ease-out"
+  >
+    <div class="flex justify-between items-center p-6">
+      <a href={getRelativeLocaleUrl(lang, "")} class="h-12.5">
+        <img src="/logos/logo-devias.svg" alt="Logo Devias" class="h-full" />
+      </a>
+
+      <div class="flex gap-4 items-center">
+        <div class="border border-outline rounded-md p-1 flex items-center">
+          <a href={esUrl} class:list={["font-roboto-mono text-[12px] py-1 px-3 rounded-sm text-[#666666] font-bold", lang === "es" && activeClass]}>ES</a>
+          <a href={enUrl} class:list={["font-roboto-mono text-[12px] py-1 px-3 rounded-sm text-[#666666] font-bold", lang === "en" && activeClass]}>EN</a>
+        </div>
+
+        <button
+          type="button"
+          data-menu-close
+          aria-label={t?.close}
+          class="w-8 h-8 grid place-content-center"
+        >
+          <X class="w-7 h-7 text-primary" />
+        </button>
+      </div>
+    </div>
+
+    <nav class="flex-1 flex pl-[60px] mt-[96px]">
+      <ul class="flex flex-col gap-8">
+        {navLinks.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              data-menu-link
+              class="group inline-flex flex-col overflow-hidden font-roboto text-[36px] leading-none text-[#606060] aria-[current=page]:text-primary aria-[current=page]:font-bold"
+            >
+              {link.label}
+              <span class="inline-block w-8 h-2 bg-secondary mt-1 translate-x-[-200%] transition group-aria-[current=page]:translate-x-0"></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="p-6">
+      <a
+        href="#"
+        data-menu-link
+        class="h-38.5 bg-secondary rounded-lg p-6 flex flex-col justify-between"
+      >
+        <div class="flex justify-end">
+          <ArrowRight class="text-primary" />
+        </div>
+
+        <p class="text-primary text-2xl font-roboto text-start" set:html={t?.cta} />
+      </a>
+    </div>
+  </aside>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>("[data-menu-root]");
+  const panel = root?.querySelector<HTMLElement>("[data-menu-panel]");
+  const backdrop = root?.querySelector<HTMLElement>("[data-menu-backdrop]");
+  const openBtn = document.querySelector<HTMLButtonElement>("[data-menu-open]");
+  const closeBtn = root?.querySelector<HTMLButtonElement>("[data-menu-close]");
+
+  if (root && panel && backdrop && openBtn && closeBtn) {
+    const links = root.querySelectorAll<HTMLAnchorElement>("[data-menu-link]");
+
+    /** Marca como activo el link cuyo hash coincide con el de la URL. */
+    const syncActiveLink = () => {
+      links.forEach((link) => {
+        const href = link.getAttribute("href") ?? "";
+        if (href !== "#" && href === window.location.hash) {
+          link.setAttribute("aria-current", "page");
+        } else {
+          link.removeAttribute("aria-current");
+        }
+      });
+    };
+
+    const open = () => {
+      syncActiveLink();
+      root.classList.remove("invisible", "delay-300");
+      openBtn.setAttribute("aria-expanded", "true");
+      document.body.style.overflow = "hidden";
+      // Un frame de margen para que el navegador registre el estado inicial
+      // y la transición de entrada se anime en vez de saltar.
+      requestAnimationFrame(() => {
+        panel.classList.remove("-translate-x-full");
+        backdrop.classList.remove("opacity-0");
+      });
+      closeBtn.focus();
+    };
+
+    const close = () => {
+      panel.classList.add("-translate-x-full");
+      backdrop.classList.add("opacity-0");
+      root.classList.add("invisible", "delay-300");
+      openBtn.setAttribute("aria-expanded", "false");
+      document.body.style.overflow = "";
+    };
+
+    openBtn.addEventListener("click", open);
+    closeBtn.addEventListener("click", close);
+    backdrop.addEventListener("click", close);
+    links.forEach((link) => link.addEventListener("click", close));
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && openBtn.getAttribute("aria-expanded") === "true") {
+        close();
+      }
+    });
+  }
+</script>

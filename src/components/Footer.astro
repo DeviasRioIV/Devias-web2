@@ -13,7 +13,7 @@ const { t } = Astro.props;
 ---
 <footer class="bg-[url('/images/blue-dither-bg-footer.webp')] w-full px-21.25 py-12 -mt-2 -z-1">
   <!-- About us -->
-  <div class="mb-8">
+  <div class="mb-8 md:w-fit md:max-w-51.75 md:mx-auto">
     <h4 class="text-white font-roboto-mono text-2xl">{t.aboutUs.title}</h4>
 
     <ul class="flex flex-col gap-2.25 mt-2.25">
@@ -28,7 +28,7 @@ const { t } = Astro.props;
   </div>
 
   <!-- Social -->
-  <div>
+  <div class="md:w-fit md:mx-auto md:max-w-51.75">
     <ul class="flex flex-col gap-2.25 mt-2.25">
       {
         t.social.links.map(link => (
@@ -41,10 +41,10 @@ const { t } = Astro.props;
   </div>
 
   <!-- directions -->
-   <div class="flex flex-col gap-[1em] mt-24">
+   <div class="flex flex-col gap-[1em] mt-24 md:w-fit md:mx-auto md:max-w-51.75">
     {
       t.directions.map(dir => (
-        <p class="text-white font-roboto-mono text-[16px]">{dir}</p>
+        <p class="text-white font-roboto-mono text-[16px] text-justify">{dir}</p>
       ))
     }
    </div>
