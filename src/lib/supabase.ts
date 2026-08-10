@@ -8,7 +8,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // Read from import.meta.env (dev/build) with a runtime fallback to process.env
 // (Vercel serverless populates env vars there).
-function readEnv(key: string): string | undefined {
+export function readEnv(key: string): string | undefined {
   return (
     (import.meta.env as Record<string, string | undefined>)[key] ??
     (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[key]
