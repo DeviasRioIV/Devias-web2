@@ -16,8 +16,8 @@ export const contactSchema = z.object({
     .min(6)
     .regex(/^[0-9\s()-]+$/),
   company: z.string().trim().optional(),
-  /** Indexes of the "señales" ticked in step 1 (empty for the single-step form). */
-  signals: z.array(z.number().int()).default([]),
+  /** Text of the "señales" ticked in step 1 (empty for the single-step form). */
+  signals: z.array(z.string().trim().min(1)).default([]),
 });
 
 export type ContactPayload = z.infer<typeof contactSchema>;

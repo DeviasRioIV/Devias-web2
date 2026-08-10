@@ -22,21 +22,21 @@ const { t } = Astro.props;
   </div>
 
 
-  <button class="h-38.5 bg-secondary rounded-lg p-6 flex flex-col justify-between md:h-full cursor-pointer">
+  <a class="h-38.5 bg-secondary rounded-lg p-6 flex flex-col justify-between md:h-full cursor-pointer" href='#last-contact-form'>
 
     <div class="flex justify-end">
       <ArrowRight class="text-primary" />
     </div>
 
     <p class="text-primary text-xl font-roboto text-start" set:html={t.ctaEvaluate} />
-  </button>
+  </a>
 
-  <button class="h-38.5 bg-primary rounded-lg p-6 flex flex-col justify-between md:h-full cursor-pointer">
+  <a class="h-38.5 bg-primary rounded-lg p-6 flex flex-col justify-between md:h-full cursor-pointer" href='#we-dont-sell-hours'>
 
     <div class="flex justify-end">
       <ArrowRight class="text-white" />
     </div>
 
     <p class="text-white text-xl font-roboto text-start" set:html={t.ctaHowItWorks} />
-  </button>
+  </a>
 </section>

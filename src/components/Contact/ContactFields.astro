@@ -36,7 +36,7 @@ interface Props {
 const { t, lang = "es", action = "/api/contact", variant = "dark" } = Astro.props;
 
 const countries = getCountries(lang);
-const defaultCountry = countries.find((c) => c.iso2 === "ar") ?? countries[0];
+const defaultCountry = countries.find((c) => c.iso2 === "us") ?? countries[0];
 
 // Unique per instance so multiple forms on one page don't clash on ids
 // (label `for`, getElementById). Astro has no useId, so a short random suffix.
@@ -117,7 +117,10 @@ const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Bool
     <span class="field__error">{t.errors.company}</span>
   </div>
 
-  <button type="submit" class="cf-btn" data-submit>{t.submit}</button>
+  <button type="submit" class="cf-btn" data-submit>
+    <span class="cf-btn__spinner" aria-hidden="true"></span>
+    <span>{t.submit}</span>
+  </button>
   <p class="cf-msg" data-msg role="status">{t.success}</p>
   <p class="cf-msg cf-msg--error" data-error-msg role="alert">{t.sendError}</p>
 </form>
@@ -368,6 +371,42 @@ const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Bool
 
   .cf-btn:hover {
     filter: brightness(1.08);
+  }
+
+  /* After :hover so a disabled button never brightens. Covers both the
+     in-flight state and the permanent post-submit one (.is-sent). */
+  .cf-btn:disabled {
+    cursor: default;
+    filter: none;
+    opacity: 0.7;
+  }
+
+  .cf-btn__spinner {
+    display: none;
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: cf-spin 0.6s linear infinite;
+  }
+
+  .contact-fields.is-sending .cf-btn__spinner {
+    display: block;
+  }
+
+  @keyframes cf-spin {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  /* Still spins — a frozen spinner would read as "stuck" — but slowly. */
+  @media (prefers-reduced-motion: reduce) {
+    .cf-btn__spinner {
+      animation-duration: 1.6s;
+    }
   }
 
   .cf-msg {

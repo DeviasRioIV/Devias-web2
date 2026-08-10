@@ -59,10 +59,10 @@ const { t, action, lang = "es" } = Astro.props;
         <div class="panel" data-panel>
           <ul class="signals">
             {
-              t.signals.map((signal, i) => (
+              t.signals.map((signal) => (
                 <li>
                   <label class="signal">
-                    <input class="signal__input" type="checkbox" value={i} data-signal />
+                    <input class="signal__input" type="checkbox" value={signal} data-signal />
                     <span class="signal__box" aria-hidden="true" />
                     <span class="signal__text">{signal}</span>
                   </label>

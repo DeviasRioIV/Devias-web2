@@ -3,8 +3,8 @@
 // form. Idempotent per form element.
 //
 // When the fields live inside a `[data-contact]` wrapper (the two-step form),
-// the ticked "señales" from step 1 are included in the payload; otherwise the
-// signals array is empty.
+// the ticked "señales" from step 1 are included in the payload (as their text,
+// matching the `signals text[]` column); otherwise the signals array is empty.
 import { contactSchema } from "./schema";
 
 export function initContactFields(fieldsEl: HTMLFormElement) {
@@ -25,12 +25,25 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
   const getSignals = () =>
     signalsRoot
       ? Array.from(signalsRoot.querySelectorAll<HTMLInputElement>("[data-signal]:checked")).map(
-          (s) => Number(s.value),
+          (s) => s.value,
         )
       : [];
 
+  // In-flight: spinner in the button + button disabled. Guarded by a flag too,
+  // since a disabled button can still be bypassed (Enter in a text input).
+  let sending = false;
+  const setSending = (on: boolean) => {
+    sending = on;
+    fieldsEl.classList.toggle("is-sending", on);
+    if (submitBtn) {
+      submitBtn.disabled = on;
+      submitBtn.setAttribute("aria-busy", String(on));
+    }
+  };
+
   fieldsEl.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (sending) return;
     clearErrors();
     fieldsEl.classList.remove("is-error");
 
@@ -56,7 +69,7 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
     }
 
     const action = fieldsEl.dataset.action || "/api/contact";
-    if (submitBtn) submitBtn.disabled = true;
+    setSending(true);
 
     try {
       const res = await fetch(action, {
@@ -65,10 +78,12 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
         body: JSON.stringify(result.data),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      fieldsEl.classList.add("is-sent"); // keep disabled: submitted
+      setSending(false);
+      fieldsEl.classList.add("is-sent");
+      if (submitBtn) submitBtn.disabled = true; // stays disabled: submitted
     } catch {
+      setSending(false); // let them retry
       fieldsEl.classList.add("is-error");
-      if (submitBtn) submitBtn.disabled = false; // let them retry
     }
 
     emitLayout();
