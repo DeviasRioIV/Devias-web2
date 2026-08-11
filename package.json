@@ -18,6 +18,7 @@
     "@tailwindcss/vite": "^4.3.1",
     "astro": "^7.0.2",
     "flag-icons": "^7.5.0",
+    "resend": "^6.18.1",
     "tailwindcss": "^4.3.1",
     "world-countries": "^5.1.0",
     "zod": "^3.25.76"

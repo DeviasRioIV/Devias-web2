@@ -6,6 +6,7 @@
 // allowed by an RLS policy for the `anon` role; see db/contacts.sql).
 import type { APIRoute } from "astro";
 import { contactSchema } from "../../components/Contact/schema";
+import { sendContactEmail } from "../../lib/contactEmail";
 import { sendContactWebhook } from "../../lib/contactWebhook";
 import { getSupabaseClient } from "../../lib/supabase";
 
@@ -59,18 +60,27 @@ export const POST: APIRoute = async ({ request }) => {
       return json({ ok: false, error: "storage" }, 500);
     }
 
-    try {
-      await sendContactWebhook({
-        id: contactId,
-        created_at: webhookCreatedAt,
-        name: data.name,
-        email: data.email,
-        phone: `${data.phoneCountry}${data.phone}`,
-        company: data.company ?? null,
-        signals: data.signals,
-      });
-    } catch (error) {
-      console.error("[contact] webhook failed:", error);
+    const outboundPayload = {
+      id: contactId,
+      created_at: webhookCreatedAt,
+      name: data.name,
+      email: data.email,
+      phone: `${data.phoneCountry}${data.phone}`,
+      company: data.company ?? null,
+      signals: data.signals,
+    };
+
+    const [webhookResult, emailResult] = await Promise.allSettled([
+      sendContactWebhook(outboundPayload),
+      sendContactEmail(outboundPayload),
+    ]);
+
+    if (webhookResult.status === "rejected") {
+      console.error("[contact] webhook failed:", webhookResult.reason);
+    }
+
+    if (emailResult.status === "rejected") {
+      console.error("[contact] email failed:", emailResult.reason);
     }
   } catch (error) {
     console.error("[contact] unexpected error:", error);
