@@ -6,6 +6,7 @@
 // allowed by an RLS policy for the `anon` role; see db/contacts.sql).
 import type { APIRoute } from "astro";
 import { contactSchema } from "../../components/Contact/schema";
+import { sendContactWebhook } from "../../lib/contactWebhook";
 import { getSupabaseClient } from "../../lib/supabase";
 
 export const prerender = false;
@@ -35,11 +36,16 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const data = result.data;
+  const createdAt = new Date().toISOString();
+  const webhookCreatedAt = createdAt.replace("T", " ").replace("Z", "+00");
+  const contactId = crypto.randomUUID();
 
   try {
     const { error } = await getSupabaseClient()
       .from("contacts")
       .insert({
+        id: contactId,
+        created_at: createdAt,
         name: data.name,
         email: data.email,
         phone_country: data.phoneCountry,
@@ -51,6 +57,20 @@ export const POST: APIRoute = async ({ request }) => {
     if (error) {
       console.error("[contact] insert failed:", error);
       return json({ ok: false, error: "storage" }, 500);
+    }
+
+    try {
+      await sendContactWebhook({
+        id: contactId,
+        created_at: webhookCreatedAt,
+        name: data.name,
+        email: data.email,
+        phone: `${data.phoneCountry}${data.phone}`,
+        company: data.company ?? null,
+        signals: data.signals,
+      });
+    } catch (error) {
+      console.error("[contact] webhook failed:", error);
     }
   } catch (error) {
     console.error("[contact] unexpected error:", error);
