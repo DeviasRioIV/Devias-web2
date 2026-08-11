@@ -11,7 +11,7 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
   if (fieldsEl.dataset.init) return;
   fieldsEl.dataset.init = "1";
 
-  initCountryDropdown(fieldsEl);
+  const resetCountryDropdown = initCountryDropdown(fieldsEl);
 
   const fields = Array.from(fieldsEl.querySelectorAll<HTMLElement>(".field"));
   const submitBtn = fieldsEl.querySelector<HTMLButtonElement>("[data-submit]");
@@ -32,6 +32,7 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
   // In-flight: spinner in the button + button disabled. Guarded by a flag too,
   // since a disabled button can still be bypassed (Enter in a text input).
   let sending = false;
+  let successTimer: ReturnType<typeof setTimeout> | null = null;
   const setSending = (on: boolean) => {
     sending = on;
     fieldsEl.classList.toggle("is-sending", on);
@@ -44,8 +45,12 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
   fieldsEl.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (sending) return;
+    if (successTimer) {
+      clearTimeout(successTimer);
+      successTimer = null;
+    }
     clearErrors();
-    fieldsEl.classList.remove("is-error");
+    fieldsEl.classList.remove("is-error", "is-sent");
 
     const fd = new FormData(fieldsEl);
     const data = {
@@ -79,8 +84,19 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSending(false);
+
+      fieldsEl.reset();
+      resetCountryDropdown();
+      signalsRoot
+        ?.querySelectorAll<HTMLInputElement>("[data-signal]:checked")
+        .forEach((input) => (input.checked = false));
+
       fieldsEl.classList.add("is-sent");
-      if (submitBtn) submitBtn.disabled = true; // stays disabled: submitted
+      successTimer = setTimeout(() => {
+        fieldsEl.classList.remove("is-sent");
+        successTimer = null;
+        emitLayout();
+      }, 3000);
     } catch {
       setSending(false); // let them retry
       fieldsEl.classList.add("is-error");
@@ -100,13 +116,17 @@ function initCountryDropdown(root: HTMLElement) {
   const valueInput = root.querySelector<HTMLInputElement>("[data-country-value]");
   const flagEl = root.querySelector<HTMLElement>("[data-country-flag]");
   const codeEl = root.querySelector<HTMLElement>("[data-country-code]");
-  if (!wrap || !toggle || !pop || !search || !list || !valueInput || !flagEl || !codeEl) return;
+  if (!wrap || !toggle || !pop || !search || !list || !valueInput || !flagEl || !codeEl) {
+    return () => {};
+  }
 
   // Move the popover to <body> so it escapes any transformed / overflow-hidden
   // ancestor (the two-step slider), which would otherwise trap a fixed element.
   document.body.appendChild(pop);
 
   const opts = Array.from(pop.querySelectorAll<HTMLElement>("[data-country-opt]"));
+  const initialSelected =
+    opts.find((o) => o.getAttribute("aria-selected") === "true") ?? opts[0] ?? null;
   let open = false;
   let visible = opts;
   let activeIndex = -1;
@@ -172,6 +192,16 @@ function initCountryDropdown(root: HTMLElement) {
     closePop(true);
   };
 
+  const resetSelection = () => {
+    const selected = initialSelected;
+    if (!selected) return;
+    opts.forEach((o) => o.setAttribute("aria-selected", "false"));
+    selected.setAttribute("aria-selected", "true");
+    flagEl.className = `fi fi-${selected.dataset.iso}`;
+    codeEl.textContent = selected.dataset.dial ?? "";
+    valueInput.value = selected.dataset.dial ?? "";
+  };
+
   toggle.addEventListener("click", () => (open ? closePop() : openPop()));
   search.addEventListener("input", filter);
   list.addEventListener("click", (e) => {
@@ -202,4 +232,6 @@ function initCountryDropdown(root: HTMLElement) {
 
   window.addEventListener("scroll", () => open && position(), true);
   window.addEventListener("resize", () => open && position());
+
+  return resetSelection;
 }
