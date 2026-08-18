@@ -62,7 +62,8 @@ const t = getTranslations(lang);
       ))}
     </h3>
 
-    <div class="flex-col hidden md:flex bg-[url('/images/dither-mid.svg')] p-0 py-48 items-center">
+    <div class="flex-col hidden md:flex bg-[url(/images/dither-mid.png)] bg-size-[150%] bg-position-[center_left] w-full p-0 py-48 items-center">
+      
       <h3>
         <span class="inline max-w-fit font-roboto font-normal text-[64px] text-white">
           {t.homeTexts.growingUpIsNotAProblem[0]} {t.homeTexts.growingUpIsNotAProblem[1]}
@@ -89,7 +90,7 @@ const t = getTranslations(lang);
   
     <DiagnosticSteps t={t.homeTexts.diagnosticSteps} />
 
-    <section class="md:max-h-150 md:h-150 h-auto w-full mt-12 md:mt-36 overflow-hidden flex justify-center items-center relative">
+    <section class="md:max-h-175 md:h-175 h-auto w-full mt-12 md:mt-36 overflow-hidden flex justify-center items-center relative">
 
       <ImageTilesTransition
         images={teamImages}
