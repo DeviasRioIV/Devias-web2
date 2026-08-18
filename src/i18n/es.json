@@ -103,22 +103,26 @@
     "yourNextDecision": {
       "blue": "Tu próxima decisión no es crecer más.",
       "green": "Es poder sostenerlo."
+    },
+    "diagnosticSteps": [
+      {
+        "title": "Diagnóstico",
+        "description": "Entendemos tu operación de punta a punta y te mostramos, con datos, dónde están los cuellos de botella."
+      },
+      {
+        "title": "Diseño de solución",
+        "description": "Diseñamos la solución con vos, alineada a cómo opera realmente tu negocio."
+      },
+      {
+        "title": "Desarrollo e implementación",
+        "description": "Construimos lo necesario para que tu operación pueda sostener el crecimiento que ya estás generando."
+      }
+    ],
+    "humanizing": {
+      "title": "Humanizando",
+      "subtitle": "Productos digitales"
     }
   },
-  "diagnosticSteps": [
-    {
-      "title": "Diagnóstico",
-      "description": "Entendemos tu operación de punta a punta y te mostramos, con datos, dónde están los cuellos de botella."
-    },
-    {
-      "title": "Diseño de solución",
-      "description": "Diseñamos la solución con vos, alineada a cómo opera realmente tu negocio."
-    },
-    {
-      "title": "Desarrollo e implementación",
-      "description": "Construimos lo necesario para que tu operación pueda sostener el crecimiento que ya estás generando."
-    }
-  ],
   "footer": {
     "aboutUs": {
       "title": "Nosotros",

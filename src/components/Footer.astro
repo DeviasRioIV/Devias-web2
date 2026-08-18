@@ -11,45 +11,50 @@ interface Props {
 
 const { t } = Astro.props;
 ---
-<footer class="bg-[url('/images/dither-footer.svg')] bg-no-repeat bg-cover w-full px-21.25 py-12 -mt-2 -z-1">
-  <!-- About us -->
-  <div class="mb-8 md:w-fit md:max-w-51.75 md:mx-auto">
-    <h4 class="text-white font-roboto-mono text-2xl">{t.aboutUs.title}</h4>
-
-    <ul class="flex flex-col gap-2.25 mt-2.25">
+<footer class="bg-[url('/images/dither-footer.svg')] bg-no-repeat bg-cover w-full px-21.25 pt-[88px] pb-[144px] -mt-2 -z-1">
+  
+  <div class="max-w-205 mx-auto flex justify-between md:items-center flex-col md:flex-row gap-12 md:gap-0 items-start">
+    <div>
+      <!-- About us -->
+      <div class="md:w-fit">
+        <h4 class="text-white font-roboto-mono text-2xl">{t.aboutUs.title}</h4>
+    
+        <ul class="flex flex-col gap-2.25 mt-2.25">
+          {
+            t.aboutUs.links.map(link => (
+              <li>
+                <a href={link.href} class="text-white font-roboto-mono text-2xl opacity-75">{link.label}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    
+      <!-- Social -->
+      <div class="mt-8">
+        <ul class="flex flex-col gap-2.25">
+          {
+            t.social.links.map(link => (
+              <li>
+                <a target="_blank" rel="noopener noreferrer" href={link.href} class="text-white font-roboto-mono text-2xl opacity-75">{link.label}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+  
+    <!-- directions -->
+    <div class="flex flex-col gap-[1em] md:w-fit md:max-w-73.75 h-fit">
       {
-        t.aboutUs.links.map(link => (
-          <li>
-            <a href={link.href} class="text-white font-roboto-mono text-2xl opacity-75">{link.label}</a>
-          </li>
+        t.directions.map(dir => (
+          <p class="text-white font-roboto-mono text-[16px] text-justify">{dir}</p>
         ))
       }
-    </ul>
+    </div>
+  
+    <div class="flex items-center justify-center self-center">
+      <img src="/logos/Iso+Eslogan.svg" alt="Footer Image" class="w-25">
+    </div>
   </div>
-
-  <!-- Social -->
-  <div class="md:w-fit md:mx-auto md:max-w-51.75">
-    <ul class="flex flex-col gap-2.25 mt-2.25">
-      {
-        t.social.links.map(link => (
-          <li>
-            <a target="_blank" rel="noopener noreferrer" href={link.href} class="text-white font-roboto-mono text-2xl opacity-75">{link.label}</a>
-          </li>
-        ))
-      }
-    </ul>
-  </div>
-
-  <!-- directions -->
-   <div class="flex flex-col gap-[1em] mt-24 md:w-fit md:mx-auto md:max-w-51.75">
-    {
-      t.directions.map(dir => (
-        <p class="text-white font-roboto-mono text-[16px] text-justify">{dir}</p>
-      ))
-    }
-   </div>
-
-   <div class="flex items-center w-full justify-center mt-12">
-     <img src="/logos/Iso+Eslogan.svg" alt="Footer Image" class="w-16.25">
-   </div>
 </footer>

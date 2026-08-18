@@ -103,22 +103,26 @@
     "yourNextDecision": {
       "blue": "Your next decision is not to grow more.",
       "green": "It's being able to sustain it."
+    },
+    "diagnosticSteps": [
+      {
+        "title": "Diagnostic",
+        "description": "We understand your operation end to end and show you, with data, where the bottlenecks are."
+      },
+      {
+        "title": "Solution design",
+        "description": "We design the solution with you, aligned with how your business really operates."
+      },
+      {
+        "title": "Development and implementation",
+        "description": "We build what is necessary for your operation to sustain the growth you are already generating."
+      }
+    ],
+    "humanizing": {
+      "title": "Humanizing",
+      "subtitle": "Digital products"
     }
   },
-  "diagnosticSteps": [
-    {
-      "title": "Diagnostic",
-      "description": "We understand your operation end to end and show you, with data, where the bottlenecks are."
-    },
-    {
-      "title": "Solution design",
-      "description": "We design the solution with you, aligned with how your business really operates."
-    },
-    {
-      "title": "Development and implementation",
-      "description": "We build what is necessary for your operation to sustain the growth you are already generating."
-    }
-  ],
   "footer": {
     "aboutUs": {
       "title": "About Us",

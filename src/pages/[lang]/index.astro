@@ -7,9 +7,18 @@ import ErrorWindows from '../../components/ErrorWindows/ErrorWindows.astro';
 import TwoStepsContactForm from '../../components/TwoStepsContactForm/TwoStepsContactForm.astro';
 import SimpleContactForm from '../../components/SimpleContactForm/ContactForm.astro';
 import { getTranslations } from '../../i18n/utils';
-import GridBackground from '../../components/GridBackground.astro';
+// import GridBackground from '../../components/GridBackground.astro';
 import Footer from '../../components/Footer.astro';
-import { ArrowRight } from '@lucide/astro';
+// import { ArrowRight } from '@lucide/astro';
+import ImageTilesTransition from '../../components/ImageTilesTransition.astro';
+
+const teamImages = [
+  "/images/team/devias-team-dither-dark-1.png",
+  "/images/team/devias-team-dither-dark-2.png",
+  "/images/team/devias-team-dither-dark-3.png",
+  "/images/team/devias-team-dither-dark-4.png",
+  "/images/team/devias-team-dither-dark-5.png",
+];
 
 export function getStaticPaths() {
   return [
@@ -26,7 +35,7 @@ const t = getTranslations(lang);
 	<HeroSection t={t.hero} />
 
   <main class="bg-white rounded-b-lg z-10 relative pb-10">
-    <div class="flex justify-center px-2.5 md:px-5 py-10">
+    <div class="flex justify-center px-2.5 md:px-5 pt-2 pb-10">
       <TwoStepsContactForm t={t.contact} lang={lang} />
     </div>
   
@@ -53,13 +62,13 @@ const t = getTranslations(lang);
       ))}
     </h3>
 
-    <div class="flex-col hidden md:flex bg-primary p-0 py-48 items-center">
+    <div class="flex-col hidden md:flex bg-[url('/images/dither-mid.svg')] p-0 py-48 items-center">
       <h3>
-        <span class="inline max-w-fit font-roboto text-[64px] bg-primary text-white">
+        <span class="inline max-w-fit font-roboto font-normal text-[64px] text-white">
           {t.homeTexts.growingUpIsNotAProblem[0]} {t.homeTexts.growingUpIsNotAProblem[1]}
         </span>
         <br>
-        <span class="inline max-w-fit font-roboto text-[64px] bg-primary text-secondary font-bold">
+        <span class="inline max-w-fit font-roboto font-bold text-[64px] text-secondary">
           {t.homeTexts.growingUpIsNotAProblem[2]} {t.homeTexts.growingUpIsNotAProblem[3]}
         </span>
       </h3>
@@ -78,11 +87,30 @@ const t = getTranslations(lang);
       ))}
     </h3>
   
-    <DiagnosticSteps t={t.diagnosticSteps} />
-  
-    <div class="relative w-full py-25 px-2.5 mt-12 md:p-0" id="our-clients">
+    <DiagnosticSteps t={t.homeTexts.diagnosticSteps} />
 
-      <!-- <div class="md:max-w-186.5 md:mx-auto md:py-24">
+    <section class="md:max-h-150 md:h-150 h-auto w-full mt-12 md:mt-36 overflow-hidden flex justify-center items-center relative">
+
+      <ImageTilesTransition
+        images={teamImages}
+        cols={18}
+        rows={12}
+        displayMs={4000}
+        revealMs={500}
+        staggerMs={1400}
+        alt="Fotos del equipo Devias"
+      />
+
+      <div class="absolute">
+        <h3 class="font-univia-ultra font-black text-[32px] md:text-[64px] uppercase text-white leading-[100%]">{t.homeTexts.humanizing.title}</h3>
+        <h3 class="font-univia font-normal text-[32px] md:text-[64px] uppercase text-secondary leading-[100%]">{t.homeTexts.humanizing.subtitle}</h3>
+      </div>
+
+    </section>
+  
+    <!-- <div class="relative w-full py-25 px-2.5 mt-12 md:p-0" id="our-clients">
+
+      <div class="md:max-w-186.5 md:mx-auto md:py-24">
         <GridBackground />
     
         <h3 class="flex flex-col">
@@ -107,8 +135,8 @@ const t = getTranslations(lang);
             <ArrowRight class="absolute right-5 top-5 stroke-primary w-6 h-6" />
           </button>
         </div>
-      </div> -->
-    </div>
+      </div>
+    </div> -->
   
     <div class='flex flex-col px-2.5 my-12 md:max-w-205 md:mx-auto md:py-36'>
       <h5 class="font-univia-ultra text-[40px] text-primary uppercase md:text-[64px] md:leading-[110%]">
