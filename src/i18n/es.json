@@ -5,8 +5,7 @@
     "nav": [
       { "label": "Nosotros", "href": "#" },
       { "label": "Problemas", "href": "#operational-chaos" },
-      { "label": "Cómo trabajamos", "href": "#we-dont-sell-hours" },
-      { "label": "Casos reales", "href": "#our-clients" }
+      { "label": "Cómo trabajamos", "href": "#we-dont-sell-hours" }
     ],
     "cta": "Quiero escalar<br>sin fricción"
   },
@@ -125,11 +124,10 @@
   },
   "footer": {
     "aboutUs": {
-      "title": "Nosotros",
       "links": [
+        { "label": "Inicio", "href": "#header" },
         { "label": "Problemas", "href": "#operational-chaos" },
-        { "label": "Cómo trabajamos", "href": "#we-dont-sell-hours" },
-        { "label": "Casos reales", "href": "#our-clients" }
+        { "label": "Cómo trabajamos", "href": "#we-dont-sell-hours" }
       ]
     },
     "social": {

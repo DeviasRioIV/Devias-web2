@@ -5,8 +5,7 @@
     "nav": [
       { "label": "About us", "href": "#" },
       { "label": "Problems", "href": "#operational-chaos" },
-      { "label": "How we work", "href": "#we-dont-sell-hours" },
-      { "label": "Real cases", "href": "#our-clients" }
+      { "label": "How we work", "href": "#we-dont-sell-hours" }
     ],
     "cta": "I want to scale<br>without friction"
   },
@@ -125,11 +124,10 @@
   },
   "footer": {
     "aboutUs": {
-      "title": "About Us",
       "links": [
+        { "label": "Home", "href": "#header" },
         { "label": "Problems", "href": "#operational-chaos" },
-        { "label": "How we work", "href": "#we-dont-sell-hours" },
-        { "label": "Case studies", "href": "#our-clients" }
+        { "label": "How we work", "href": "#we-dont-sell-hours" }
       ]
     },
     "social": {
