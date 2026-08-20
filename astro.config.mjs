@@ -2,9 +2,11 @@
 import { defineConfig, fontProviders } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import vercel from '@astrojs/vercel';
+import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://devias.ar',
   // The site stays static; only routes with `export const prerender = false`
   // (e.g. /api/contact) run on-demand as Vercel serverless functions.
   adapter: vercel(),
@@ -17,8 +19,13 @@ export default defineConfig({
     }
   },
   redirects: {
-    "/": "/es"
+    "/": "/es/"
   },
+  integrations: [
+    sitemap({
+      filter: (page) => !new URL(page).pathname.startsWith('/internal')
+    })
+  ],
   vite: {
     plugins: [tailwindcss()]
   },

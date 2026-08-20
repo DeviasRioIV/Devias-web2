@@ -29,9 +29,18 @@ export function getStaticPaths() {
 
 const { lang } = Astro.params;
 const t = getTranslations(lang);
+const seo = lang === 'en'
+  ? {
+      title: 'Devias | Digital systems to scale your business',
+      description: 'We organize your operations with digital systems before growth turns into chaos.'
+    }
+  : {
+      title: 'Devias | Sistemas digitales para escalar tu negocio',
+      description: 'Ordenamos tus operaciones con sistemas digitales para que el crecimiento de tu empresa no se convierta en caos.'
+    };
 ---
 
-<Layout lang={lang} t={t}>
+<Layout lang={lang} t={t} {...seo}>
 	<HeroSection t={t.hero} />
 
   <main class="bg-white rounded-b-lg z-10 relative pb-10">

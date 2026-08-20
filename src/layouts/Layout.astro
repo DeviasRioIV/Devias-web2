@@ -2,7 +2,28 @@
 import { Font } from "astro:assets";
 import "../styles/global.css";
 import Header from '../components/Header.astro';
-const { lang = "es", t } = Astro.props;
+const {
+  lang = "es",
+  t,
+  title = "Devias | Sistemas digitales para escalar tu negocio",
+  description = "Ordenamos tus operaciones con sistemas digitales para que el crecimiento de tu empresa no se convierta en caos.",
+  noindex = false,
+} = Astro.props;
+
+const site = Astro.site ?? new URL('https://devias.ar');
+const canonical = new URL(Astro.url.pathname, site);
+const alternateEs = new URL('/es/', site);
+const alternateEn = new URL('/en/', site);
+const ogImage = new URL('/images/dither-hero.png', site);
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Devias',
+  url: site.href,
+  logo: new URL('/logos/logo-devias.svg', site).href,
+  email: 'hola@devias.ar',
+  sameAs: ['https://www.linkedin.com/company/devias-ar/'],
+};
 ---
 
 <!doctype html>
@@ -11,12 +32,34 @@ const { lang = "es", t } = Astro.props;
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" href="/favicon.ico" />
+		<link rel="canonical" href={canonical} />
+		<link rel="alternate" hreflang="es" href={alternateEs} />
+		<link rel="alternate" hreflang="en" href={alternateEn} />
+		<link rel="alternate" hreflang="x-default" href={alternateEs} />
+		<link rel="sitemap" href="/sitemap-index.xml" />
 		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={description} />
+		{noindex && <meta name="robots" content="noindex, nofollow" />}
 		<Font cssVariable="--univia-pro-regular" preload />
 		<Font cssVariable="--univia-pro-ultra" preload />
 		<Font cssVariable="--roboto-mono" preload />
 		<Font cssVariable="--roboto" preload />
-		<title>Devias</title>
+		<title>{title}</title>
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Devias" />
+		<meta property="og:locale" content={lang === 'es' ? 'es_AR' : 'en_US'} />
+		<meta property="og:url" content={canonical} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={ogImage} />
+		<meta property="og:image:width" content="4003" />
+		<meta property="og:image:height" content="2250" />
+		<meta property="og:image:alt" content="Textura azul de Devias" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={ogImage} />
+		<script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
 
 		{import.meta.env.PROD && import.meta.env.PUBLIC_CLARITY_ID && (
 			<script is:inline define:vars={{ id: import.meta.env.PUBLIC_CLARITY_ID }}>
