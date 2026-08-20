@@ -44,9 +44,9 @@ const { t, action, lang = "es" } = Astro.props;
 <section class="contact" data-contact>
   {/* Mobile: el título va afuera de la card. En desktop pasa a estar dentro,
       sobre el fondo azul, junto al label "Diagnóstico". */}
-  <h2 class="font-univia-ultra text-[40px] text-primary uppercase mb-4 md:hidden">
+  <!-- <h2 class="font-univia-ultra text-[40px] text-primary uppercase mb-4 md:hidden">
     {t.sectionTitle}
-  </h2>
+  </h2> -->
   <div class="card">
     <div class="card__head">
       <p class="eyebrow">{t.eyebrow}</p>
@@ -120,14 +120,17 @@ const { t, action, lang = "es" } = Astro.props;
 
   /* Cabecera interna: solo desktop (en mobile el título vive fuera de la card). */
   .card__head {
-    display: none;
+    margin-bottom: 24px;
   }
 
   .eyebrow {
     margin: 0 0 24px;
-    color: var(--muted);
-    font-size: 16px;
-    line-height: 1;
+      color: var(--muted);
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 12px;
+    line-height: 100%;
+    letter-spacing: 0%;
   }
 
   .card__title {
@@ -135,8 +138,10 @@ const { t, action, lang = "es" } = Astro.props;
     color: #fff;
     font-family: var(--font-roboto, sans-serif);
     font-weight: 700;
-    font-size: 40px;
-    line-height: 1.1;
+    font-style: Bold;
+    font-size: 24px;
+    line-height: 100%;
+    letter-spacing: 0%;
   }
 
   /* --- Slider ------------------------------------------------------------ */
@@ -323,9 +328,16 @@ const { t, action, lang = "es" } = Astro.props;
       padding: 24px;
     }
 
-    .card__head {
-      display: block;
-      margin-bottom: 24px;
+    .eyebrow {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .card__title {
+      font-family: var(--font-roboto, sans-serif);
+      font-weight: 700;
+      font-size: 40px;
+      line-height: 1.1;
     }
 
     /* Señales: mismo layout, respirando más y con tipografía más grande. */

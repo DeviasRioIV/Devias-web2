@@ -3,7 +3,6 @@
     "menu": "Menú",
     "close": "Cerrar menú",
     "nav": [
-      { "label": "Nosotros", "href": "#" },
       { "label": "Problemas", "href": "#operational-chaos" },
       { "label": "Cómo trabajamos", "href": "#we-dont-sell-hours" }
     ],
