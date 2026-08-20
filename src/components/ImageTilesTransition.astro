@@ -51,7 +51,7 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
 >
   <img class="image-tiles-transition__base" alt={alt} decoding="async" />
   <div class="image-tiles-transition__tiles" aria-hidden="true">
-    {tiles.map((clipPath) => <img class="image-tiles-transition__tile" alt="" decoding="async" style={`clip-path:${clipPath}`} />)}
+    {tiles.map((clipPath) => <img class="image-tiles-transition__tile" alt="" decoding="async" style={`clip-path:${clipPath}`} loading="lazy" />)}
   </div>
   <slot />
 </div>
