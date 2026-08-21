@@ -3,7 +3,7 @@
     "menu": "Menu",
     "close": "Close menu",
     "nav": [
-      { "label": "Problems", "href": "#operational-chaos" },
+      { "label": "What we solve", "href": "#operational-chaos" },
       { "label": "How we work", "href": "#we-dont-sell-hours" }
     ],
     "cta": "I want to scale<br>without friction"
