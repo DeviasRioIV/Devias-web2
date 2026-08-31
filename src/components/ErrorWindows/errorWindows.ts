@@ -11,8 +11,11 @@ const BG: [number, number, number] = [255, 255, 255];
 
 /** css px per dithered "pixel" — larger = chunkier and cheaper to draw. */
 const CELL = 2;
+const CELL_SAFARI = 3;
 /** Global slow-down factor for the blob motion. */
 const SLOW = 0.35;
+const FRAME_MS_DEFAULT = 40; // ~25 fps
+const FRAME_MS_SAFARI = 66; // ~15 fps
 
 // 8x8 Bayer ordered-dither matrix, normalized to 0..1.
 const BAYER8 = [
@@ -64,16 +67,27 @@ export function createBlobField(canvas: HTMLCanvasElement, stage: HTMLElement): 
   const ctx = canvas.getContext("2d");
   if (!ctx) return { play() {}, pause() {}, destroy() {} };
 
+  const ua = navigator.userAgent || "";
+  const isWebKitSafari = /AppleWebKit/i.test(ua) && !/(Chrome|CriOS|Edg|OPR|FxiOS|Firefox)/i.test(ua);
+  const cell = isWebKitSafari ? CELL_SAFARI : CELL;
+  const frameMs = isWebKitSafari ? FRAME_MS_SAFARI : FRAME_MS_DEFAULT;
+  const activeBlobs = isWebKitSafari ? BLOBS.slice(0, 4) : BLOBS;
+
   let w = 0;
   let h = 0;
+  let img: ImageData | null = null;
+  let data: Uint8ClampedArray | null = null;
   const resize = () => {
     const rect = stage.getBoundingClientRect();
-    w = Math.max(1, Math.round(rect.width / CELL));
-    h = Math.max(1, Math.round(rect.height / CELL));
+    w = Math.max(1, Math.round(rect.width / cell));
+    h = Math.max(1, Math.round(rect.height / cell));
     canvas.width = w;
     canvas.height = h;
+    img = ctx.createImageData(w, h);
+    data = img.data;
   };
   resize();
+  ctx.imageSmoothingEnabled = false;
 
   const ro = new ResizeObserver(resize);
   ro.observe(stage);
@@ -82,23 +96,27 @@ export function createBlobField(canvas: HTMLCanvasElement, stage: HTMLElement): 
   let lastDrawTime = -1000;
 
   const draw = (t: number) => {
-    // Throttle to ~25fps; the dithered look doesn't need more.
-    if (t - lastDrawTime < 40) {
+    // Throttle the loop; Safari benefits from a lower target fps.
+    if (t - lastDrawTime < frameMs) {
       raf = requestAnimationFrame(draw);
       return;
     }
     lastDrawTime = t;
 
-    const img = ctx.createImageData(w, h);
-    const data = img.data;
+    if (!img || !data) {
+      raf = requestAnimationFrame(draw);
+      return;
+    }
     const minDim = Math.min(w, h);
 
-    const centers = BLOBS.map((b) => {
+    const centers = activeBlobs.map((b) => {
       const mix = (Math.sin(t * b.mixFr + b.mixPh) + 1) / 2; // 0 = green core, 1 = white
+      const r = (b.r + Math.sin(t * b.fr + b.ph) * b.ra) * minDim;
+      const sigma = r * 0.5;
       return {
         cx: (b.bx + Math.sin(t * b.fx + b.ph) * b.ax) * w,
         cy: (b.by + Math.cos(t * b.fy + b.ph * 1.3) * b.ay) * h,
-        r: (b.r + Math.sin(t * b.fr + b.ph) * b.ra) * minDim,
+        sigmaInv2: 1 / (2 * sigma * sigma),
         color: lerp3(GREEN, BG, mix),
       };
     });
@@ -112,8 +130,7 @@ export function createBlobField(canvas: HTMLCanvasElement, stage: HTMLElement): 
           const dx = x - c.cx;
           const dy = y - c.cy;
           const d2 = dx * dx + dy * dy;
-          const sigma = c.r * 0.5;
-          const contrib = Math.exp(-d2 / (2 * sigma * sigma));
+          const contrib = Math.exp(-d2 * c.sigmaInv2);
           field += contrib;
           cr += contrib * c.color[0];
           cg += contrib * c.color[1];

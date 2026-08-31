@@ -84,6 +84,10 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
     let isTransitioning = false;
     let revealFrame = null;
     let finishTimeout = null;
+    let timer = null;
+    let observer = null;
+    let isInView = true;
+    let isPageVisible = !document.hidden;
 
     baseImg.src = images[currentIndex];
 
@@ -106,6 +110,56 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
     };
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const ua = navigator.userAgent || "";
+    const isWebKitSafari = /AppleWebKit/i.test(ua) && !/(Chrome|CriOS|Edg|OPR|FxiOS|Firefox)/i.test(ua);
+    const prefersLiteMode = isWebKitSafari;
+
+    const stopTimer = () => {
+      if (timer !== null) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    };
+
+    const clearPending = () => {
+      if (revealFrame !== null) {
+        window.cancelAnimationFrame(revealFrame);
+        revealFrame = null;
+      }
+      if (finishTimeout !== null) {
+        window.clearTimeout(finishTimeout);
+        finishTimeout = null;
+      }
+      isTransitioning = false;
+    };
+
+    const syncPlayback = () => {
+      const shouldRun = isInView && isPageVisible;
+      if (!shouldRun) {
+        stopTimer();
+        clearPending();
+        return;
+      }
+      if (timer === null) {
+        timer = window.setInterval(startTransition, displayMs);
+      }
+    };
+
+    // Safari sufre con cientos de capas + clip-path, por eso usamos un solo
+    // overlay para un crossfade liviano y mantenemos la imagen base intacta.
+    const setupLiteTiles = () => {
+      const overlay = tiles[0];
+      if (!(overlay instanceof HTMLImageElement)) return null;
+      for (let i = 1; i < tiles.length; i++) {
+        tiles[i].style.display = "none";
+      }
+      overlay.style.clipPath = "none";
+      overlay.style.transitionDelay = "0ms";
+      overlay.style.transitionDuration = `${revealMs}ms`;
+      return overlay;
+    };
+
+    const liteOverlay = prefersLiteMode ? setupLiteTiles() : null;
 
     // Cada celda espera un tiempo proporcional a su distancia hasta un origen
     // aleatorio (mas jitter), de modo que la grilla se llene como una onda que
@@ -139,6 +193,36 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
       const nextSrc = images[nextIndex];
 
       await waitForImage(nextSrc);
+
+      if (!isInView || !isPageVisible) {
+        isTransitioning = false;
+        return;
+      }
+
+      if (liteOverlay instanceof HTMLImageElement) {
+        liteOverlay.src = nextSrc;
+
+        if (revealFrame !== null) window.cancelAnimationFrame(revealFrame);
+        if (finishTimeout !== null) window.clearTimeout(finishTimeout);
+
+        revealFrame = window.requestAnimationFrame(() => {
+          revealFrame = null;
+          liteOverlay.style.opacity = "1";
+        });
+
+        const totalMsLite = revealMs + 60;
+        finishTimeout = window.setTimeout(() => {
+          finishTimeout = null;
+          baseImg.src = nextSrc;
+          liteOverlay.style.transitionDuration = "0ms";
+          liteOverlay.style.opacity = "0";
+          void root.offsetWidth;
+          liteOverlay.style.transitionDuration = `${revealMs}ms`;
+          currentIndex = nextIndex;
+          isTransitioning = false;
+        }, totalMsLite);
+        return;
+      }
 
       // Las celdas siguen en opacity 0, asi que cambiar el src no se ve.
       for (const tile of tiles) tile.src = nextSrc;
@@ -174,12 +258,33 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
       }, totalMs);
     };
 
-    const timer = window.setInterval(startTransition, displayMs);
-    window.addEventListener("beforeunload", () => {
-      window.clearInterval(timer);
-      if (revealFrame !== null) window.cancelAnimationFrame(revealFrame);
-      if (finishTimeout !== null) window.clearTimeout(finishTimeout);
-    });
+    observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          isInView = entry.isIntersecting;
+          syncPlayback();
+        }
+      },
+      { threshold: 0.15 },
+    );
+    observer.observe(root);
+
+    const onVisibilityChange = () => {
+      isPageVisible = !document.hidden;
+      syncPlayback();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    const cleanup = () => {
+      stopTimer();
+      clearPending();
+      if (observer) observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+
+    window.addEventListener("beforeunload", cleanup, { once: true });
+    document.addEventListener("astro:before-swap", cleanup, { once: true });
+    syncPlayback();
   })();
 </script>
 
