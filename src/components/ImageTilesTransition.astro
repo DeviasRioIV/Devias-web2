@@ -27,21 +27,31 @@ const normalizedImages = images.filter(Boolean);
 // Las celdas se renderizan aca, no con createElement en el cliente: Astro
 // scopea el CSS con un atributo `data-astro-cid-*` que solo agrega el compilador,
 // asi que un elemento creado en JS no recibiria ninguno de los estilos de abajo.
+//
+// Cada celda es un cuadro chico con `overflow: hidden` y adentro una copia de la
+// foto a tamano completo, desplazada para que se vea justo el trozo que le toca.
+// Antes era una <img> del tamano de TODO el contenedor recortada con clip-path:
+// al animar la opacidad, WebKit promueve cada celda a su propia capa de
+// compositing del tamano del ELEMENTO (el clip no la achica), asi que 18x12
+// celdas pedian ~216 capas de pantalla completa. Eso es lo que fundia a Safari.
+// Con el cuadro chico la capa mide una celda: la memoria de GPU total pasa a ser
+// aproximadamente una sola pantalla.
+//
+// El tamano de la casilla viaja como `--cell-w`/`--cell-h` en vez de calcularse
+// con `calc(100% / var(--cols))`: dividir por una var() dentro de calc no esta
+// soportado de forma pareja en las versiones de Safari que todavia hay dando
+// vueltas, y multiplicar si lo esta.
 const round = (value: number) => Number(value.toFixed(4));
-const tiles = Array.from({ length: rows * cols }, (_, i) => {
-  const r = Math.floor(i / cols);
-  const c = i % cols;
-  const top = round((r / rows) * 100);
-  const right = round(100 - ((c + 1) / cols) * 100);
-  const bottom = round(100 - ((r + 1) / rows) * 100);
-  const left = round((c / cols) * 100);
-  return `inset(${top}% ${right}% ${bottom}% ${left}%)`;
-});
+const tiles = Array.from({ length: rows * cols }, (_, i) => ({
+  c: i % cols,
+  r: Math.floor(i / cols),
+}));
 ---
 
 <div
   id={rootId}
   class={`image-tiles-transition ${className}`.trim()}
+  style={`--cols:${cols}; --rows:${rows}; --cell-w:${round(100 / cols)}%; --cell-h:${round(100 / rows)}%; --reveal-duration:${revealMs}ms;`}
   data-images={JSON.stringify(normalizedImages)}
   data-cols={String(cols)}
   data-rows={String(rows)}
@@ -50,8 +60,14 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
   data-stagger-ms={String(staggerMs)}
 >
   <img class="image-tiles-transition__base" alt={alt} decoding="async" />
-  <div class="image-tiles-transition__tiles" aria-hidden="true">
-    {tiles.map((clipPath) => <img class="image-tiles-transition__tile" alt="" decoding="async" style={`clip-path:${clipPath}`} loading="lazy" />)}
+  <div class="image-tiles-transition__tiles" aria-hidden="true" data-tiles>
+    {
+      tiles.map(({ c, r }) => (
+        <div class="image-tiles-transition__tile" style={`--c:${c}; --r:${r};`}>
+          <img class="image-tiles-transition__tile-img" alt="" decoding="async" draggable={false} />
+        </div>
+      ))
+    }
   </div>
   <slot />
 </div>
@@ -62,11 +78,13 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
     if (!root) return;
 
     const images = JSON.parse(root.getAttribute("data-images") || "[]");
+    const baseImg = root.querySelector(".image-tiles-transition__base");
+    if (!(baseImg instanceof HTMLImageElement)) return;
+
     if (!Array.isArray(images) || images.length < 2) {
       // Con una sola imagen no hay nada que animar; se muestra fija.
       const only = Array.isArray(images) ? images[0] : null;
-      const base = root.querySelector(".image-tiles-transition__base");
-      if (only && base instanceof HTMLImageElement) base.src = only;
+      if (only) baseImg.src = only;
       return;
     }
 
@@ -76,32 +94,46 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
     const revealMs = Number(root.getAttribute("data-reveal-ms")) || 1000;
     const staggerMs = Number(root.getAttribute("data-stagger-ms")) || 1400;
 
-    const baseImg = root.querySelector(".image-tiles-transition__base");
+    const tilesEl = root.querySelector("[data-tiles]");
     const tiles = Array.from(root.querySelectorAll(".image-tiles-transition__tile"));
-    if (!(baseImg instanceof HTMLImageElement) || tiles.length !== rows * cols) return;
+    if (!tilesEl || tiles.length !== rows * cols) return;
 
     let currentIndex = 0;
+    let pendingIndex = -1;
     let isTransitioning = false;
     let revealFrame = null;
     let finishTimeout = null;
     let timer = null;
-    let observer = null;
-    let isInView = true;
+    let isInView = false;
     let isPageVisible = !document.hidden;
 
-    baseImg.src = images[currentIndex];
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const ua = navigator.userAgent || "";
+    const isWebKitSafari = /AppleWebKit/i.test(ua) && !/(Chrome|CriOS|Edg|OPR|FxiOS|Firefox)/i.test(ua);
+    const isLowEnd =
+      (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
 
-    // Precarga: sin esto una celda puede revelarse antes de que su bitmap exista.
-    const preloaded = new Map();
-    for (const src of images) {
-      const img = new Image();
-      img.src = src;
-      preloaded.set(src, img);
-    }
+    // --- Precarga ----------------------------------------------------------
+    // Antes se instanciaban las cinco imagenes de golpe. Son PNG de ~500 KB y
+    // Safari decodifica en el hilo principal, asi que arrancaba con cinco
+    // decodificaciones encimadas. Ahora se pide solo la que sigue, y se espera
+    // a `decode()` para que el bitmap ya este listo cuando empieza el fundido
+    // (si no, la decodificacion cae justo en medio de la animacion).
+    const cache = new Map();
+    const ensure = (src) => {
+      let img = cache.get(src);
+      if (!img) {
+        img = new Image();
+        img.decoding = "async";
+        img.src = src;
+        cache.set(src, img);
+      }
+      return img;
+    };
 
-    const waitForImage = (src) => {
-      const img = preloaded.get(src);
-      if (!(img instanceof HTMLImageElement)) return Promise.resolve();
+    const ready = (src) => {
+      const img = ensure(src);
+      if (typeof img.decode === "function") return img.decode().catch(() => {});
       if (img.complete && img.naturalWidth > 0) return Promise.resolve();
       return new Promise((resolve) => {
         img.addEventListener("load", resolve, { once: true });
@@ -109,84 +141,54 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
       });
     };
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const ua = navigator.userAgent || "";
-    const isWebKitSafari = /AppleWebKit/i.test(ua) && !/(Chrome|CriOS|Edg|OPR|FxiOS|Firefox)/i.test(ua);
-    const prefersAdaptiveGrid = isWebKitSafari;
+    baseImg.src = images[currentIndex];
 
-    const stopTimer = () => {
-      if (timer !== null) {
-        window.clearInterval(timer);
-        timer = null;
-      }
-    };
+    // --- Grilla adaptativa -------------------------------------------------
+    // Aun con celdas baratas, cada una es una capa y una transicion mas. En
+    // Safari y en equipos chicos se baja la resolucion de la grilla; la onda se
+    // conserva, solo cambia el grano.
+    let maxTiles = cols * rows;
+    if (isWebKitSafari) maxTiles = Math.min(maxTiles, 120);
+    if (isLowEnd) maxTiles = Math.min(maxTiles, 96);
 
-    const clearPending = () => {
-      if (revealFrame !== null) {
-        window.cancelAnimationFrame(revealFrame);
-        revealFrame = null;
-      }
-      if (finishTimeout !== null) {
-        window.clearTimeout(finishTimeout);
-        finishTimeout = null;
-      }
-      isTransitioning = false;
-    };
-
-    const syncPlayback = () => {
-      const shouldRun = isInView && isPageVisible;
-      if (!shouldRun) {
-        stopTimer();
-        clearPending();
-        return;
-      }
-      if (timer === null) {
-        timer = window.setInterval(startTransition, displayMs);
-      }
-    };
-
-    // Safari sufre con muchas capas recortadas; en lugar de quitar la animacion,
-    // usamos una grilla mas chica para conservar la onda con menor costo.
-    const setupAdaptiveTiles = () => {
-      if (!prefersAdaptiveGrid) {
+    const setupGrid = () => {
+      const total = cols * rows;
+      if (maxTiles >= total) {
         return { activeTiles: tiles, gridCols: cols, gridRows: rows };
       }
-
-      const maxTiles = 72;
-      const total = cols * rows;
-      const scale = Math.min(1, Math.sqrt(maxTiles / total));
+      const scale = Math.sqrt(maxTiles / total);
       const gridCols = Math.max(6, Math.min(cols, Math.round(cols * scale)));
       const gridRows = Math.max(4, Math.min(rows, Math.round(rows * scale)));
       const visibleCount = gridCols * gridRows;
-      const activeTiles = tiles.slice(0, visibleCount);
 
-      const round = (value) => Number(value.toFixed(4));
+      root.style.setProperty("--cols", String(gridCols));
+      root.style.setProperty("--rows", String(gridRows));
+      root.style.setProperty("--cell-w", `${(100 / gridCols).toFixed(4)}%`);
+      root.style.setProperty("--cell-h", `${(100 / gridRows).toFixed(4)}%`);
       for (let i = 0; i < tiles.length; i++) {
         const tile = tiles[i];
         if (i >= visibleCount) {
-          tile.style.display = "none";
+          tile.classList.add("is-off");
           continue;
         }
-        const r = Math.floor(i / gridCols);
-        const c = i % gridCols;
-        const top = round((r / gridRows) * 100);
-        const right = round(100 - ((c + 1) / gridCols) * 100);
-        const bottom = round(100 - ((r + 1) / gridRows) * 100);
-        const left = round((c / gridCols) * 100);
-        tile.style.display = "block";
-        tile.style.clipPath = `inset(${top}% ${right}% ${bottom}% ${left}%)`;
+        tile.style.setProperty("--c", String(i % gridCols));
+        tile.style.setProperty("--r", String(Math.floor(i / gridCols)));
       }
-
-      return { activeTiles, gridCols, gridRows };
+      return { activeTiles: tiles.slice(0, visibleCount), gridCols, gridRows };
     };
 
-    const { activeTiles, gridCols, gridRows } = setupAdaptiveTiles();
+    const { activeTiles, gridCols, gridRows } = setupGrid();
+    const activeImgs = activeTiles.map((tile) => tile.firstElementChild);
 
+    // --- Timings -----------------------------------------------------------
     // Cada celda espera un tiempo proporcional a su distancia hasta un origen
     // aleatorio (mas jitter), de modo que la grilla se llene como una onda que
-    // nace en un punto distinto en cada cambio. La duracion va inline y no por
-    // hoja de estilos: un `var()` dentro del shorthand `transition` es fragil y
-    // dejaba el fundido en 0ms.
+    // nace en un punto distinto en cada cambio.
+    //
+    // El delay va en la custom property `--delay` y la hoja de estilos solo la
+    // lee dentro de `.is-revealing`. Asi, al sacar la clase, delay y duracion
+    // vuelven a 0ms junto con la opacidad: el reset es instantaneo y no hace
+    // falta forzar un reflow como antes.
     const assignTimings = () => {
       // Con movimiento reducido se conserva el fundido pero se quita la onda,
       // porque un corte seco molesta mas que una disolucion suave.
@@ -201,19 +203,60 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
         const dist = Math.hypot(c - cx, r - cy) / maxDist;
         const jitter = (Math.random() - 0.5) * 0.35;
         const progress = Math.max(0, Math.min(1, dist + jitter));
-        activeTiles[i].style.transitionDuration = `${revealMs}ms`;
-        activeTiles[i].style.transitionDelay = `${progress * stagger}ms`;
+        activeTiles[i].style.setProperty("--delay", `${Math.round(progress * stagger)}ms`);
       }
     };
 
-    const startTransition = async () => {
+    const stopTimer = () => {
+      if (timer !== null) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    };
+
+    /** Da por terminada la transicion en curso sin animar el reset. */
+    const clearPending = () => {
+      if (revealFrame !== null) {
+        window.cancelAnimationFrame(revealFrame);
+        revealFrame = null;
+      }
+      if (finishTimeout !== null) {
+        window.clearTimeout(finishTimeout);
+        finishTimeout = null;
+      }
+      // Si el fundido quedo a medias (se salio de pantalla), se cierra en la
+      // imagen nueva: dejarlo a medias hacia que el proximo cambio pisara las
+      // celdas todavia visibles y se viera un salto.
+      if (pendingIndex >= 0) {
+        baseImg.src = images[pendingIndex];
+        currentIndex = pendingIndex;
+        pendingIndex = -1;
+      }
+      tilesEl.classList.remove("is-revealing");
+      isTransitioning = false;
+    };
+
+    const syncPlayback = () => {
+      const shouldRun = isInView && isPageVisible;
+      if (!shouldRun) {
+        stopTimer();
+        clearPending();
+        return;
+      }
+      if (timer === null) {
+        timer = window.setInterval(startTransition, displayMs);
+        ready(images[(currentIndex + 1) % images.length]);
+      }
+    };
+
+    async function startTransition() {
       if (isTransitioning) return;
       isTransitioning = true;
 
       const nextIndex = (currentIndex + 1) % images.length;
       const nextSrc = images[nextIndex];
 
-      await waitForImage(nextSrc);
+      await ready(nextSrc);
 
       if (!isInView || !isPageVisible) {
         isTransitioning = false;
@@ -221,18 +264,18 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
       }
 
       // Las celdas siguen en opacity 0, asi que cambiar el src no se ve.
-      for (const tile of activeTiles) tile.src = nextSrc;
+      for (const img of activeImgs) img.src = nextSrc;
       assignTimings();
+      pendingIndex = nextIndex;
 
       if (revealFrame !== null) window.cancelAnimationFrame(revealFrame);
-      if (finishTimeout !== null) window.clearTimeout(finishTimeout);
 
       // Dos frames: el primero deja que el navegador registre el estado inicial
-      // (src y delay nuevos en opacity 0), el segundo dispara la transicion.
+      // (src y delays nuevos en opacity 0), el segundo dispara la transicion.
       revealFrame = window.requestAnimationFrame(() => {
         revealFrame = window.requestAnimationFrame(() => {
           revealFrame = null;
-          for (const tile of activeTiles) tile.style.opacity = "1";
+          tilesEl.classList.add("is-revealing");
         });
       });
 
@@ -240,26 +283,26 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
       finishTimeout = window.setTimeout(() => {
         finishTimeout = null;
         baseImg.src = nextSrc;
-        // La base ya muestra la misma imagen, asi que devolver las celdas a 0
-        // es invisible, pero hay que hacerlo sin animar para no ver un fundido
-        // inverso. La duracion se vuelve a fijar en el proximo assignTimings.
-        for (const tile of activeTiles) {
-          tile.style.transitionDuration = "0ms";
-          tile.style.transitionDelay = "0ms";
-          tile.style.opacity = "0";
-        }
-        void root.offsetWidth; // fuerza el reflow para que el reset no se anime
         currentIndex = nextIndex;
-        isTransitioning = false;
+        // Un frame de margen antes de apagar las celdas: si se apagan en el
+        // mismo tick en que la base cambia de src, Safari alcanza a mostrar un
+        // parpadeo con la foto anterior.
+        revealFrame = window.requestAnimationFrame(() => {
+          revealFrame = null;
+          tilesEl.classList.remove("is-revealing");
+          pendingIndex = -1;
+          isTransitioning = false;
+          ready(images[(nextIndex + 1) % images.length]);
+        });
       }, totalMs);
-    };
+    }
 
-    observer = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           isInView = entry.isIntersecting;
-          syncPlayback();
         }
+        syncPlayback();
       },
       { threshold: 0.15 },
     );
@@ -271,16 +314,33 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
 
-    const cleanup = () => {
-      stopTimer();
-      clearPending();
-      if (observer) observer.disconnect();
-      document.removeEventListener("visibilitychange", onVisibilityChange);
+    // pagehide/pageshow, no `beforeunload`: en Safari basta con registrar un
+    // listener de `beforeunload` para que la pagina quede fuera del bfcache, y
+    // ademas destruirlo todo ahi dejaba la animacion muerta al volver con el
+    // boton "atras". Aca solo se pausa y se retoma.
+    const onPageHide = () => {
+      isPageVisible = false;
+      syncPlayback();
     };
+    const onPageShow = () => {
+      isPageVisible = !document.hidden;
+      syncPlayback();
+    };
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
 
-    window.addEventListener("beforeunload", cleanup, { once: true });
-    document.addEventListener("astro:before-swap", cleanup, { once: true });
-    syncPlayback();
+    document.addEventListener(
+      "astro:before-swap",
+      () => {
+        stopTimer();
+        clearPending();
+        observer.disconnect();
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        window.removeEventListener("pagehide", onPageHide);
+        window.removeEventListener("pageshow", onPageShow);
+      },
+      { once: true },
+    );
   })();
 </script>
 
@@ -293,8 +353,7 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
     aspect-ratio: 16 / 10;
   }
 
-  .image-tiles-transition__base,
-  .image-tiles-transition__tile {
+  .image-tiles-transition__base {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -308,11 +367,54 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
     pointer-events: none;
   }
 
+  /* Cada celda es un recorte del tamano de una casilla de la grilla. Las
+     medidas salen de porcentajes sobre el contenedor, sin JS de por medio, asi
+     que cambiar --cols/--rows realinea todo solo.
+
+     El +1px de ancho/alto es un sangrado hacia la derecha y abajo que tapa las
+     costuras de 1px que aparecen cuando la casilla no cae sobre un pixel
+     exacto. La imagen de adentro descuenta ese pixel (`- var(--cols) * 1px`)
+     para seguir alineada al pixel con la imagen de fondo. */
   .image-tiles-transition__tile {
+    position: absolute;
+    overflow: hidden;
+    left: calc(var(--c) * var(--cell-w));
+    top: calc(var(--r) * var(--cell-h));
+    width: calc(var(--cell-w) + 1px);
+    height: calc(var(--cell-h) + 1px);
+    /* Acota la invalidacion al cuadro de la celda: sin esto, cambiar el src de
+       una celda marca como sucia el area de todo el bloque. */
+    contain: layout paint;
     opacity: 0;
-    /* La duracion y el delay los fija el script por celda. */
     transition-property: opacity;
     transition-duration: 0ms;
+    transition-delay: 0ms;
     transition-timing-function: cubic-bezier(0.33, 0, 0.67, 1);
+  }
+
+  .image-tiles-transition__tile.is-off {
+    display: none;
+  }
+
+  .image-tiles-transition__tile-img {
+    position: absolute;
+    left: calc(var(--c) * -100% + var(--c) * 1px);
+    top: calc(var(--r) * -100% + var(--r) * 1px);
+    width: calc(var(--cols) * 100% - var(--cols) * 1px);
+    height: calc(var(--rows) * 100% - var(--rows) * 1px);
+    max-width: none;
+    object-fit: cover;
+  }
+
+  /* La duracion y el delay solo existen mientras dura el fundido: al sacar la
+     clase, opacidad, duracion y delay vuelven juntos a su valor base y las
+     celdas se apagan de forma instantanea, sin animar el reset al reves.
+     `will-change` tambien vive solo aca: dejarlo fijo mantendria cientos de
+     capas promovidas encareciendo cada scroll. */
+  .image-tiles-transition__tiles.is-revealing .image-tiles-transition__tile {
+    opacity: 1;
+    transition-duration: var(--reveal-duration, 0ms);
+    transition-delay: var(--delay, 0ms);
+    will-change: opacity;
   }
 </style>

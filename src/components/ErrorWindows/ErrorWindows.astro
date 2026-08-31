@@ -151,8 +151,17 @@ const windows = LAYOUT.map((layout, i) => ({
     background: #fff;
     border: 2px solid var(--ink);
     touch-action: none;
+    /* El contenido de una ventana no afecta al layout del resto del stage:
+       acotarlo evita que arrastrar una recalcule las otras cuatro. */
+    contain: layout paint;
     /* Hidden until the block scrolls into view (see .is-visible below). */
     opacity: 0;
+  }
+
+  /* Solo mientras se arrastra: promueve la ventana a su propia capa en vez de
+     dejarla permanentemente promovida (5 capas fijas encarecen el scroll). */
+  .window.is-dragging {
+    will-change: left, top;
   }
 
   .window__bar {
@@ -279,24 +288,37 @@ const windows = LAYOUT.map((layout, i) => ({
     const field = createBlobField(canvas, stage);
     const cleanupDrag = initDraggableWindows(stage);
 
+    // Con movimiento reducido el canvas quedaba en blanco: ahora se pinta un
+    // solo frame fijo y no se arranca el loop.
+    if (reduce) field.renderStatic();
+
+    let inView = false;
+    const sync = () => {
+      if (reduce) return;
+      if (inView && !document.hidden) field.play();
+      else field.pause();
+    };
+
     // Play the entrance + blobs when in view, pause the canvas when out.
     const io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
-            root.classList.add("is-visible");
-            if (!reduce) field.play();
-          } else {
-            field.pause();
-          }
+          if (entry.isIntersecting) root.classList.add("is-visible");
+          inView = entry.isIntersecting;
         }
+        sync();
       },
       { threshold: 0.2 },
     );
     io.observe(stage);
 
+    // rAF ya se frena con la pestana oculta, pero en iOS Safari el canvas puede
+    // seguir un rato al cambiar de app o de pestana; esto lo corta enseguida.
+    document.addEventListener("visibilitychange", sync);
+
     document.addEventListener("astro:before-swap", () => {
       io.disconnect();
+      document.removeEventListener("visibilitychange", sync);
       field.destroy();
       cleanupDrag();
     }, { once: true });
