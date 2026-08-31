@@ -112,7 +112,7 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const ua = navigator.userAgent || "";
     const isWebKitSafari = /AppleWebKit/i.test(ua) && !/(Chrome|CriOS|Edg|OPR|FxiOS|Firefox)/i.test(ua);
-    const prefersLiteMode = isWebKitSafari;
+    const prefersAdaptiveGrid = isWebKitSafari;
 
     const stopTimer = () => {
       if (timer !== null) {
@@ -145,21 +145,42 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
       }
     };
 
-    // Safari sufre con cientos de capas + clip-path, por eso usamos un solo
-    // overlay para un crossfade liviano y mantenemos la imagen base intacta.
-    const setupLiteTiles = () => {
-      const overlay = tiles[0];
-      if (!(overlay instanceof HTMLImageElement)) return null;
-      for (let i = 1; i < tiles.length; i++) {
-        tiles[i].style.display = "none";
+    // Safari sufre con muchas capas recortadas; en lugar de quitar la animacion,
+    // usamos una grilla mas chica para conservar la onda con menor costo.
+    const setupAdaptiveTiles = () => {
+      if (!prefersAdaptiveGrid) {
+        return { activeTiles: tiles, gridCols: cols, gridRows: rows };
       }
-      overlay.style.clipPath = "none";
-      overlay.style.transitionDelay = "0ms";
-      overlay.style.transitionDuration = `${revealMs}ms`;
-      return overlay;
+
+      const maxTiles = 72;
+      const total = cols * rows;
+      const scale = Math.min(1, Math.sqrt(maxTiles / total));
+      const gridCols = Math.max(6, Math.min(cols, Math.round(cols * scale)));
+      const gridRows = Math.max(4, Math.min(rows, Math.round(rows * scale)));
+      const visibleCount = gridCols * gridRows;
+      const activeTiles = tiles.slice(0, visibleCount);
+
+      const round = (value) => Number(value.toFixed(4));
+      for (let i = 0; i < tiles.length; i++) {
+        const tile = tiles[i];
+        if (i >= visibleCount) {
+          tile.style.display = "none";
+          continue;
+        }
+        const r = Math.floor(i / gridCols);
+        const c = i % gridCols;
+        const top = round((r / gridRows) * 100);
+        const right = round(100 - ((c + 1) / gridCols) * 100);
+        const bottom = round(100 - ((r + 1) / gridRows) * 100);
+        const left = round((c / gridCols) * 100);
+        tile.style.display = "block";
+        tile.style.clipPath = `inset(${top}% ${right}% ${bottom}% ${left}%)`;
+      }
+
+      return { activeTiles, gridCols, gridRows };
     };
 
-    const liteOverlay = prefersLiteMode ? setupLiteTiles() : null;
+    const { activeTiles, gridCols, gridRows } = setupAdaptiveTiles();
 
     // Cada celda espera un tiempo proporcional a su distancia hasta un origen
     // aleatorio (mas jitter), de modo que la grilla se llene como una onda que
@@ -170,18 +191,18 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
       // Con movimiento reducido se conserva el fundido pero se quita la onda,
       // porque un corte seco molesta mas que una disolucion suave.
       const stagger = reduceMotion.matches ? 0 : staggerMs;
-      const cx = Math.random() * cols;
-      const cy = Math.random() * rows;
-      const maxDist = Math.hypot(Math.max(cx, cols - cx), Math.max(cy, rows - cy)) || 1;
+      const cx = Math.random() * gridCols;
+      const cy = Math.random() * gridRows;
+      const maxDist = Math.hypot(Math.max(cx, gridCols - cx), Math.max(cy, gridRows - cy)) || 1;
 
-      for (let i = 0; i < tiles.length; i++) {
-        const r = Math.floor(i / cols);
-        const c = i % cols;
+      for (let i = 0; i < activeTiles.length; i++) {
+        const r = Math.floor(i / gridCols);
+        const c = i % gridCols;
         const dist = Math.hypot(c - cx, r - cy) / maxDist;
         const jitter = (Math.random() - 0.5) * 0.35;
         const progress = Math.max(0, Math.min(1, dist + jitter));
-        tiles[i].style.transitionDuration = `${revealMs}ms`;
-        tiles[i].style.transitionDelay = `${progress * stagger}ms`;
+        activeTiles[i].style.transitionDuration = `${revealMs}ms`;
+        activeTiles[i].style.transitionDelay = `${progress * stagger}ms`;
       }
     };
 
@@ -199,33 +220,8 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
         return;
       }
 
-      if (liteOverlay instanceof HTMLImageElement) {
-        liteOverlay.src = nextSrc;
-
-        if (revealFrame !== null) window.cancelAnimationFrame(revealFrame);
-        if (finishTimeout !== null) window.clearTimeout(finishTimeout);
-
-        revealFrame = window.requestAnimationFrame(() => {
-          revealFrame = null;
-          liteOverlay.style.opacity = "1";
-        });
-
-        const totalMsLite = revealMs + 60;
-        finishTimeout = window.setTimeout(() => {
-          finishTimeout = null;
-          baseImg.src = nextSrc;
-          liteOverlay.style.transitionDuration = "0ms";
-          liteOverlay.style.opacity = "0";
-          void root.offsetWidth;
-          liteOverlay.style.transitionDuration = `${revealMs}ms`;
-          currentIndex = nextIndex;
-          isTransitioning = false;
-        }, totalMsLite);
-        return;
-      }
-
       // Las celdas siguen en opacity 0, asi que cambiar el src no se ve.
-      for (const tile of tiles) tile.src = nextSrc;
+      for (const tile of activeTiles) tile.src = nextSrc;
       assignTimings();
 
       if (revealFrame !== null) window.cancelAnimationFrame(revealFrame);
@@ -236,7 +232,7 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
       revealFrame = window.requestAnimationFrame(() => {
         revealFrame = window.requestAnimationFrame(() => {
           revealFrame = null;
-          for (const tile of tiles) tile.style.opacity = "1";
+          for (const tile of activeTiles) tile.style.opacity = "1";
         });
       });
 
@@ -247,7 +243,7 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => {
         // La base ya muestra la misma imagen, asi que devolver las celdas a 0
         // es invisible, pero hay que hacerlo sin animar para no ver un fundido
         // inverso. La duracion se vuelve a fijar en el proximo assignTimings.
-        for (const tile of tiles) {
+        for (const tile of activeTiles) {
           tile.style.transitionDuration = "0ms";
           tile.style.transitionDelay = "0ms";
           tile.style.opacity = "0";
