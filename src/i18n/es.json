@@ -125,7 +125,7 @@
     "aboutUs": {
       "links": [
         { "label": "Inicio", "href": "#header" },
-        { "label": "Problemas", "href": "#operational-chaos" },
+        { "label": "Lo que resolvemos", "href": "#operational-chaos" },
         { "label": "Cómo trabajamos", "href": "#we-dont-sell-hours" }
       ]
     },
