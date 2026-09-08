@@ -4,15 +4,19 @@ const { t } = Astro.props;
 ---
 
 <section class="grid grid-cols-2 gap-2 px-2.5 text-center md:max-w-6xl md:h-88.5 md:flex-row md:px-5 md:grid-cols-[1fr_205px] md:mx-auto">
+  {/* Keeps the visual hero unchanged while exposing a descriptive, translated
+      page heading to assistive technologies. */}
+  <h1 class="sr-only">{t.seoHeading}</h1>
+
   <div class="col-span-2 relative aspect-square bg-[url('/images/dither-hero.png')] bg-no-repeat bg-cover rounded-lg md:aspect-auto md:col-span-1 md:row-span-2">
     <div class="flex flex-col z-20 w-full h-full p-6 pt-12 justify-between">
       <div class="flex flex-col items-start">
-        <h1 class="text-[40px] md:text-[64px] font-univia-ultra text-white uppercase text-start">
+        <p class="text-[40px] md:text-[64px] font-univia-ultra text-white uppercase text-start" aria-hidden="true">
           {t.title}
-        </h1>
-        <h3 class="text-[40px] md:text-[64px] font-univia-regular text-secondary uppercase">
+        </p>
+        <p class="text-[40px] md:text-[64px] font-univia-regular text-secondary uppercase" aria-hidden="true">
           {t.subtitle}
-        </h3>
+        </p>
       </div>
 
       <p class="text-xl font-roboto-mono text-white text-justify md:max-w-147.5 md:text-2xl">

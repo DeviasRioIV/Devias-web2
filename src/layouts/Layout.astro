@@ -10,7 +10,7 @@ const {
   noindex = false,
 } = Astro.props;
 
-const site = Astro.site ?? new URL('https://devias.ar');
+const site = Astro.site ?? new URL('https://www.devias.ar');
 const canonical = new URL(Astro.url.pathname, site);
 const alternateEs = new URL('/es/', site);
 const alternateEn = new URL('/en/', site);

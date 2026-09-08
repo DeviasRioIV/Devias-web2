@@ -6,7 +6,9 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://devias.ar',
+  // www.devias.ar is the public, canonical host. This value is also used by
+  // @astrojs/sitemap and by Astro.url when we generate SEO metadata.
+  site: 'https://www.devias.ar',
   // The site stays static; only routes with `export const prerender = false`
   // (e.g. /api/contact) run on-demand as Vercel serverless functions.
   adapter: vercel(),
