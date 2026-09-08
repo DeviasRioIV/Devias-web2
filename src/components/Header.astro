@@ -102,7 +102,7 @@ const navLinks = t?.nav ?? [];
 
     <div class="p-6">
       <a
-        href="#"
+        href={t?.cta.href}
         data-menu-link
         class="h-38.5 bg-secondary rounded-lg p-6 flex flex-col justify-between"
       >
@@ -110,7 +110,7 @@ const navLinks = t?.nav ?? [];
           <ArrowRight class="text-primary" />
         </div>
 
-        <p class="text-primary text-2xl font-roboto text-start" set:html={t?.cta} />
+        <p class="text-primary text-2xl font-roboto text-start" set:html={t?.cta.label} />
       </a>
     </div>
   </aside>

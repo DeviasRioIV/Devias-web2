@@ -6,7 +6,10 @@
       { "label": "What we solve", "href": "#operational-chaos" },
       { "label": "How we work", "href": "#we-dont-sell-hours" }
     ],
-    "cta": "I want to scale<br>without friction"
+    "cta": {
+      "label": "I want to scale<br>without friction",
+      "href": "#last-contact-form"
+    }
   },
   "hero": {
     "title": "Business first",
