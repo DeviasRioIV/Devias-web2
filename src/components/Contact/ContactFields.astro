@@ -7,7 +7,7 @@
 // colours come from CSS variables so a `variant` flips the whole theme.
 import { ChevronDown } from "@lucide/astro";
 import { getCountries } from "./countries";
-import "flag-icons/css/flag-icons.min.css";
+import defaultCountryFlag from "flag-icons/flags/4x3/us.svg";
 
 interface Field {
   label: string;
@@ -72,7 +72,12 @@ const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Bool
           aria-expanded="false"
           aria-label={t.fields.phone.label}
         >
-          <span class={`fi fi-${defaultCountry.iso2}`} data-country-flag></span>
+          <span
+            class={`country__flag fi fi-${defaultCountry.iso2}`}
+            style={`background-image: url('${defaultCountryFlag}')`}
+            data-default-flag={defaultCountryFlag}
+            data-country-flag
+          ></span>
           <span class="country__code" data-country-code>{defaultCountry.dial}</span>
           <ChevronDown class="country__caret" size={16} aria-hidden="true" />
         </button>
@@ -260,7 +265,15 @@ const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Bool
     opacity: 0.6;
   }
 
-  .country .fi {
+  /* The default flag is rendered without loading the full country-flag bundle.
+     The remaining flags are styled only after the user opens the picker. */
+  .country__flag {
+    display: inline-block;
+    width: 1.333333em;
+    aspect-ratio: 4 / 3;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
     font-size: 16px;
     border-radius: 2px;
   }
@@ -432,11 +445,31 @@ const theme = ["cf-theme", variant === "light" && "cf-theme--light"].filter(Bool
 
 <script>
   import { initContactFields } from "./contactFields";
+  import flagStylesheetUrl from "flag-icons/css/flag-icons.min.css?url";
+
+  // flag-icons contains every country's SVG. Loading it here would make the
+  // initial CSS render-blocking, even while the country picker is closed.
+  let flagStyles: Promise<void> | undefined;
+  const loadFlagStyles = () => {
+    if (!flagStyles) {
+      flagStyles = new Promise((resolve, reject) => {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = flagStylesheetUrl;
+        link.addEventListener("load", () => resolve(), { once: true });
+        link.addEventListener("error", () => reject(new Error("Could not load country flags")), {
+          once: true,
+        });
+        document.head.append(link);
+      });
+    }
+    return flagStyles;
+  };
 
   function initAll() {
     document
       .querySelectorAll<HTMLFormElement>("[data-fields]")
-      .forEach(initContactFields);
+      .forEach((fields) => initContactFields(fields, loadFlagStyles));
   }
 
   initAll();

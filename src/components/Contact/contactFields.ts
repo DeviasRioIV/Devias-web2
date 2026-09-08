@@ -7,11 +7,14 @@
 // matching the `signals text[]` column); otherwise the signals array is empty.
 import { contactSchema } from "./schema";
 
-export function initContactFields(fieldsEl: HTMLFormElement) {
+export function initContactFields(
+  fieldsEl: HTMLFormElement,
+  loadFlagStyles: () => Promise<unknown>,
+) {
   if (fieldsEl.dataset.init) return;
   fieldsEl.dataset.init = "1";
 
-  const resetCountryDropdown = initCountryDropdown(fieldsEl);
+  const resetCountryDropdown = initCountryDropdown(fieldsEl, loadFlagStyles);
 
   const fields = Array.from(fieldsEl.querySelectorAll<HTMLElement>(".field"));
   const submitBtn = fieldsEl.querySelector<HTMLButtonElement>("[data-submit]");
@@ -107,7 +110,10 @@ export function initContactFields(fieldsEl: HTMLFormElement) {
 }
 
 // Custom, searchable country dropdown with SVG flags.
-function initCountryDropdown(root: HTMLElement) {
+function initCountryDropdown(
+  root: HTMLElement,
+  loadFlagStyles: () => Promise<unknown>,
+) {
   const wrap = root.querySelector<HTMLElement>("[data-country]");
   const toggle = root.querySelector<HTMLButtonElement>("[data-country-toggle]");
   const pop = root.querySelector<HTMLElement>("[data-country-pop]");
@@ -164,7 +170,8 @@ function initCountryDropdown(root: HTMLElement) {
     setActive(visible.length ? 0 : -1);
   };
 
-  const openPop = () => {
+  const openPop = async () => {
+    await loadFlagStyles();
     open = true;
     pop.hidden = false;
     toggle.setAttribute("aria-expanded", "true");
@@ -187,6 +194,7 @@ function initCountryDropdown(root: HTMLElement) {
     opts.forEach((o) => o.setAttribute("aria-selected", "false"));
     opt.setAttribute("aria-selected", "true");
     flagEl.className = `fi fi-${opt.dataset.iso}`;
+    flagEl.style.backgroundImage = "";
     codeEl.textContent = opt.dataset.dial ?? "";
     valueInput.value = opt.dataset.dial ?? "";
     closePop(true);
@@ -198,11 +206,15 @@ function initCountryDropdown(root: HTMLElement) {
     opts.forEach((o) => o.setAttribute("aria-selected", "false"));
     selected.setAttribute("aria-selected", "true");
     flagEl.className = `fi fi-${selected.dataset.iso}`;
+    flagEl.style.backgroundImage = `url('${flagEl.dataset.defaultFlag ?? ""}')`;
     codeEl.textContent = selected.dataset.dial ?? "";
     valueInput.value = selected.dataset.dial ?? "";
   };
 
-  toggle.addEventListener("click", () => (open ? closePop() : openPop()));
+  toggle.addEventListener("click", () => {
+    if (open) closePop();
+    else void openPop();
+  });
   search.addEventListener("input", filter);
   list.addEventListener("click", (e) => {
     const opt = (e.target as HTMLElement).closest<HTMLElement>("[data-country-opt]");

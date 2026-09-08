@@ -8,8 +8,19 @@ const { t } = Astro.props;
       page heading to assistive technologies. */}
   <h1 class="sr-only">{t.seoHeading}</h1>
 
-  <div class="col-span-2 relative aspect-square bg-[url('/images/dither-hero.webp')] bg-no-repeat bg-cover rounded-lg md:aspect-auto md:col-span-1 md:row-span-2">
-    <div class="flex flex-col z-20 w-full h-full p-6 pt-12 justify-between">
+  <div class="col-span-2 relative aspect-square overflow-hidden rounded-lg md:aspect-auto md:col-span-1 md:row-span-2">
+    <img
+      src="/images/dither-hero.webp"
+      srcset="/images/dither-hero-640.webp 640w, /images/dither-hero-960.webp 960w, /images/dither-hero-1600.webp 1600w, /images/dither-hero.webp 4003w"
+      sizes="(min-width: 768px) 940px, 100vw"
+      alt=""
+      aria-hidden="true"
+      fetchpriority="high"
+      decoding="async"
+      class="absolute inset-0 h-full w-full object-cover"
+    />
+
+    <div class="relative flex flex-col z-20 w-full h-full p-6 pt-12 justify-between">
       <div class="flex flex-col items-start">
         <p class="text-[40px] md:text-[64px] font-univia-ultra text-white uppercase text-start" aria-hidden="true">
           {t.title}

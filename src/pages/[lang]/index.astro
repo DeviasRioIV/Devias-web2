@@ -12,13 +12,14 @@ import Footer from '../../components/Footer.astro';
 // import { ArrowRight } from '@lucide/astro';
 import ImageTilesTransition from '../../components/ImageTilesTransition.astro';
 
-const teamImages = [
-  "/images/team/devias-team-dither-dark-1.webp",
-  "/images/team/devias-team-dither-dark-2.webp",
-  "/images/team/devias-team-dither-dark-3.webp",
-  "/images/team/devias-team-dither-dark-4.webp",
-  "/images/team/devias-team-dither-dark-5.webp",
-];
+const teamImages = Array.from({ length: 5 }, (_, index) => {
+  const image = `/images/team/devias-team-dither-dark-${index + 1}`;
+  return {
+    src: `${image}.webp`,
+    srcset: `${image}-640.webp 640w, ${image}-1280.webp 1280w, ${image}.webp 2560w`,
+    sizes: "100vw",
+  };
+});
 
 export function getStaticPaths() {
   return [

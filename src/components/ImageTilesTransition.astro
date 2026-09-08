@@ -1,6 +1,12 @@
 ---
+interface ResponsiveImage {
+  src: string;
+  srcset?: string;
+  sizes?: string;
+}
+
 interface Props {
-  images: string[];
+  images: Array<string | ResponsiveImage>;
   cols?: number;
   rows?: number;
   displayMs?: number;
@@ -22,7 +28,9 @@ const {
 } = Astro.props as Props;
 
 const rootId = `image-tiles-${crypto.randomUUID()}`;
-const normalizedImages = images.filter(Boolean);
+const normalizedImages = images
+  .filter(Boolean)
+  .map((image) => (typeof image === "string" ? { src: image } : image));
 
 // Las celdas se renderizan aca, no con createElement en el cliente: Astro
 // scopea el CSS con un atributo `data-astro-cid-*` que solo agrega el compilador,
@@ -81,10 +89,21 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => ({
     const baseImg = root.querySelector(".image-tiles-transition__base");
     if (!(baseImg instanceof HTMLImageElement)) return;
 
+    const setImageSource = (img, image) => {
+      if (image.srcset) {
+        img.srcset = image.srcset;
+        img.sizes = image.sizes || "100vw";
+      } else {
+        img.removeAttribute("srcset");
+        img.removeAttribute("sizes");
+      }
+      img.src = image.src;
+    };
+
     if (!Array.isArray(images) || images.length < 2) {
       // Con una sola imagen no hay nada que animar; se muestra fija.
       const only = Array.isArray(images) ? images[0] : null;
-      if (only) baseImg.src = only;
+      if (only) setImageSource(baseImg, only);
       return;
     }
 
@@ -120,19 +139,19 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => ({
     // a `decode()` para que el bitmap ya este listo cuando empieza el fundido
     // (si no, la decodificacion cae justo en medio de la animacion).
     const cache = new Map();
-    const ensure = (src) => {
-      let img = cache.get(src);
+    const ensure = (image) => {
+      let img = cache.get(image.src);
       if (!img) {
         img = new Image();
         img.decoding = "async";
-        img.src = src;
-        cache.set(src, img);
+        setImageSource(img, image);
+        cache.set(image.src, img);
       }
       return img;
     };
 
-    const ready = (src) => {
-      const img = ensure(src);
+    const ready = (image) => {
+      const img = ensure(image);
       if (typeof img.decode === "function") return img.decode().catch(() => {});
       if (img.complete && img.naturalWidth > 0) return Promise.resolve();
       return new Promise((resolve) => {
@@ -141,7 +160,7 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => ({
       });
     };
 
-    baseImg.src = images[currentIndex];
+    setImageSource(baseImg, images[currentIndex]);
 
     // --- Grilla adaptativa -------------------------------------------------
     // Aun con celdas baratas, cada una es una capa y una transicion mas. En
@@ -228,7 +247,7 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => ({
       // imagen nueva: dejarlo a medias hacia que el proximo cambio pisara las
       // celdas todavia visibles y se viera un salto.
       if (pendingIndex >= 0) {
-        baseImg.src = images[pendingIndex];
+        setImageSource(baseImg, images[pendingIndex]);
         currentIndex = pendingIndex;
         pendingIndex = -1;
       }
@@ -254,9 +273,9 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => ({
       isTransitioning = true;
 
       const nextIndex = (currentIndex + 1) % images.length;
-      const nextSrc = images[nextIndex];
+      const nextImage = images[nextIndex];
 
-      await ready(nextSrc);
+      await ready(nextImage);
 
       if (!isInView || !isPageVisible) {
         isTransitioning = false;
@@ -264,7 +283,7 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => ({
       }
 
       // Las celdas siguen en opacity 0, asi que cambiar el src no se ve.
-      for (const img of activeImgs) img.src = nextSrc;
+      for (const img of activeImgs) setImageSource(img, nextImage);
       assignTimings();
       pendingIndex = nextIndex;
 
@@ -282,7 +301,7 @@ const tiles = Array.from({ length: rows * cols }, (_, i) => ({
       const totalMs = (reduceMotion.matches ? 0 : staggerMs) + revealMs + 60;
       finishTimeout = window.setTimeout(() => {
         finishTimeout = null;
-        baseImg.src = nextSrc;
+        setImageSource(baseImg, nextImage);
         currentIndex = nextIndex;
         // Un frame de margen antes de apagar las celdas: si se apagan en el
         // mismo tick en que la base cambia de src, Safari alcanza a mostrar un
