@@ -14,7 +14,7 @@ const site = Astro.site ?? new URL('https://www.devias.ar');
 const canonical = new URL(Astro.url.pathname, site);
 const alternateEs = new URL('/es/', site);
 const alternateEn = new URL('/en/', site);
-const ogImage = new URL('/images/dither-hero.png', site);
+const ogImage = new URL('/images/dither-hero.webp', site);
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
