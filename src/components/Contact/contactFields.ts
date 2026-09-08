@@ -5,8 +5,6 @@
 // When the fields live inside a `[data-contact]` wrapper (the two-step form),
 // the ticked "señales" from step 1 are included in the payload (as their text,
 // matching the `signals text[]` column); otherwise the signals array is empty.
-import { contactSchema } from "./schema";
-
 export function initContactFields(
   fieldsEl: HTMLFormElement,
   loadFlagStyles: () => Promise<unknown>,
@@ -65,6 +63,9 @@ export function initContactFields(
       signals: getSignals(),
     };
 
+    // Zod (and its schema module) load only here, on first submit, so the
+    // validation library never sits on the page's initial critical path.
+    const { contactSchema } = await import("./schema");
     const result = contactSchema.safeParse(data);
     if (!result.success) {
       for (const issue of result.error.issues) {
