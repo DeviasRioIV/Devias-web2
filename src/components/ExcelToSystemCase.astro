@@ -1,0 +1,635 @@
+---
+interface Step {
+  title: string;
+  text: string;
+}
+
+interface Mod {
+  name: string;
+  sub: string;
+  value: string;
+}
+
+interface Cell {
+  text: string;
+  kind: "" | "h" | "y" | "e";
+}
+
+interface Props {
+  eyebrow?: string;
+  titleNormal?: string;
+  titleBold?: string;
+  steps?: Step[];
+  mods?: Mod[];
+  fileLabels?: [string, string, string];
+  statusLabels?: [string, string, string];
+  autoplay?: boolean;
+  duration?: number;
+  class?: string;
+}
+
+const {
+  eyebrow = "Caso · Industria BIM",
+  titleNormal = "De una planilla de Excel",
+  titleBold = "a un sistema que sostiene toda la operación.",
+  steps = [
+    {
+      title: "La planilla",
+      text: "Todo vivía en un Excel: versiones cruzadas, fórmulas rotas y datos que sólo entendía quien los cargó.",
+    },
+    {
+      title: "Procesos formalizados",
+      text: "Relevamos cada proceso, lo estandarizamos y lo convertimos en un módulo con reglas, responsables y datos propios.",
+    },
+    {
+      title: "Decisiones en tiempo real",
+      text: "La dirección decide con lo que pasa hoy, no con lo que se cargó el mes pasado.",
+    },
+  ],
+  mods = [
+    { name: "Proyectos", sub: "Alta · Fases · Hitos", value: "14 activos" },
+    { name: "Contratos", sub: "Plantillas · Firma · Envío", value: "8 enviados hoy" },
+    { name: "Documentación", sub: "Planos · Versiones · Entregas", value: "126 planos" },
+    { name: "Coordinación", sub: "Interferencias · RFI", value: "3 RFI abiertos" },
+    { name: "Recursos", sub: "Horas · Asignación", value: "312 h hoy" },
+    { name: "Facturación", sub: "Certificaciones · Cobros", value: "$ 46,3 M" },
+  ],
+  fileLabels = ["procesos_v7_FINAL(2).xlsx", "sistema / módulos", "sistema / panel"],
+  statusLabels = ["sin sincronizar", "procesos estandarizados", "en vivo"],
+  autoplay = true,
+  duration = 6000,
+  class: className = "",
+} = Astro.props as Props;
+
+const CELLS: Cell[] = [
+  { text: "Proyecto", kind: "h" }, { text: "Estado", kind: "h" }, { text: "Hs", kind: "h" }, { text: "Resp.", kind: "h" },
+  { text: "Torre A", kind: "" }, { text: "¿?", kind: "y" }, { text: "120", kind: "" }, { text: "JM", kind: "" },
+  { text: "Torre_A_v3_FINAL", kind: "" }, { text: "ok", kind: "" }, { text: "#REF!", kind: "e" }, { text: "—", kind: "" },
+  { text: "Nave ind.", kind: "" }, { text: "atrasado", kind: "y" }, { text: "=B4*1,2", kind: "" }, { text: "MP / JM", kind: "" },
+  { text: "Rev 07", kind: "" }, { text: "ver mail", kind: "y" }, { text: "98", kind: "" }, { text: "", kind: "" },
+  { text: "Planos.xls", kind: "" }, { text: "#N/A", kind: "e" }, { text: "?", kind: "" }, { text: "pendiente", kind: "y" },
+];
+
+const BARS = [42, 55, 48, 63, 58, 70, 66, 74, 69, 80, 77, 85];
+
+// Coordenadas del layout en % dentro del "monitor". Se calculan una vez en el
+// server para pintar el estado inicial (stage 0, la planilla); el script del
+// cliente recalcula estos mismos rectángulos para los otros dos stages y los
+// escribe como estilo inline, así el CSS de transición hace el resto.
+const HX = 8;
+const HY = 6.5;
+const CW = 23;
+const RH = (100 - HY) / 6;
+const pct = (v: number) => `${v.toFixed(3)}%`;
+
+const cellRect0 = (i: number) => ({
+  l: HX + (i % 4) * CW,
+  t: HY + Math.floor(i / 4) * RH,
+  w: CW,
+  h: RH,
+});
+
+const modRectMini = (m: number) => {
+  const w = (100 - 5) / 3;
+  const h = (100 - 57 - 2.5) / 2;
+  return { l: (m % 3) * (w + 2.5), t: 57 + Math.floor(m / 3) * (h + 2.5), w, h };
+};
+
+const headers = [
+  { label: "", left: "0%", top: "0%", width: pct(HX), height: pct(HY) },
+  ...["A", "B", "C", "D"].map((label, c) => ({
+    label,
+    left: pct(HX + c * CW),
+    top: "0%",
+    width: pct(CW),
+    height: pct(HY),
+  })),
+  ...[1, 2, 3, 4, 5, 6].map((n) => ({
+    label: String(n),
+    left: "0%",
+    top: pct(HY + (n - 1) * RH),
+    width: pct(HX),
+    height: pct(RH),
+  })),
+];
+
+const rootId = `excel-to-system-${crypto.randomUUID()}`;
+---
+
+<section
+  id={rootId}
+  class={`excel-to-system bg-primary text-white ${className}`.trim()}
+  data-cells={JSON.stringify(CELLS)}
+  data-mods={JSON.stringify(mods)}
+  data-file-labels={JSON.stringify(fileLabels)}
+  data-status-labels={JSON.stringify(statusLabels)}
+  data-bars={JSON.stringify(BARS)}
+  data-autoplay={String(autoplay)}
+  data-duration={String(duration)}
+>
+  <div class="excel-to-system__grid">
+    <div class="flex flex-col gap-8 max-w-115 mx-auto md:mx-0">
+      <div class="flex flex-col gap-4">
+        <div class="font-roboto-mono text-xs uppercase tracking-wider text-secondary">{eyebrow}</div>
+        <h2 class="font-univia-ultra text-[32px] leading-tight">
+          {titleNormal} <b class="font-black">{titleBold}</b>
+        </h2>
+      </div>
+
+      <div class="flex flex-col gap-2" data-steps>
+        {
+          steps.map((step, i) => (
+            <button
+              type="button"
+              class="excel-to-system__step flex flex-col gap-2.5 py-3.5 text-left cursor-pointer"
+              data-step={i}
+              aria-current={i === 0 ? "true" : "false"}
+            >
+              <div class="excel-to-system__progress">
+                <div class="excel-to-system__progress-fill" data-progress-fill></div>
+              </div>
+              <div class="flex gap-3 items-baseline">
+                <span class="font-roboto-mono text-xs text-secondary">0{i + 1}</span>
+                <span class="font-univia-ultra font-bold text-base">{step.title}</span>
+              </div>
+              <p class="excel-to-system__step-text font-roboto text-sm leading-relaxed text-white/75 pl-8">
+                {step.text}
+              </p>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-3 w-full max-w-115 mx-auto">
+      <div class="flex justify-between items-center font-roboto-mono text-xs text-white/75">
+        <span data-file-label>{fileLabels[0]}</span>
+        <span class="flex gap-1.5 items-center">
+          <span class="excel-to-system__dot" data-dot></span>
+          <span data-status-label>{statusLabels[0]}</span>
+        </span>
+      </div>
+
+      <div class="excel-to-system__screen" data-screen>
+        <div class="excel-to-system__sheet" data-sheet></div>
+
+        {
+          headers.map((h) => (
+            <div
+              class="excel-to-system__header font-roboto-mono"
+              style={{ left: h.left, top: h.top, width: h.width, height: h.height }}
+            >
+              {h.label}
+            </div>
+          ))
+        }
+
+        {
+          CELLS.map((c, i) => {
+            const r = cellRect0(i);
+            return (
+              <div
+                class="excel-to-system__cell font-roboto-mono"
+                data-cell={i}
+                data-kind={c.kind}
+                style={{
+                  left: pct(r.l),
+                  top: pct(r.t),
+                  width: pct(r.w),
+                  height: pct(r.h),
+                  background: c.kind === "y" ? "#F6E0A7" : c.kind === "h" ? "#FAF9FE" : "#FFFFFF",
+                  color: c.kind === "e" ? "#DD3636" : c.kind === "h" ? "var(--color-primary)" : "#333333",
+                }}
+              >
+                <span data-cell-text>{c.text}</span>
+              </div>
+            );
+          })
+        }
+
+        {
+          mods.map((m, i) => {
+            const r = modRectMini(i);
+            return (
+              <div
+                class="excel-to-system__mod"
+                data-mod={i}
+                style={{ left: pct(r.l), top: pct(r.t), width: pct(r.w), height: pct(r.h) }}
+              >
+                <div class="excel-to-system__mod-full" data-mod-full>
+                  <span class="font-roboto-mono text-[11px] text-secondary">0{i + 1}</span>
+                  <div class="flex flex-col gap-1.5">
+                    <span class="font-univia-ultra font-bold text-base leading-tight text-primary">{m.name}</span>
+                    <span class="font-roboto-mono text-[10.5px] leading-tight text-black/60">{m.sub}</span>
+                  </div>
+                </div>
+                <div class="excel-to-system__mod-mini" data-mod-mini>
+                  <span class="font-univia-ultra font-bold text-xs leading-tight text-primary">{m.name}</span>
+                  <span class="font-roboto-mono text-[11px] text-black/70" data-mod-value>{m.value}</span>
+                </div>
+              </div>
+            );
+          })
+        }
+
+        <div class="excel-to-system__dash" data-dash>
+          <div class="flex justify-between items-center font-roboto-mono text-[11px]">
+            <span class="flex gap-1.5 items-center">
+              <span class="excel-to-system__dash-dot" data-blink></span>
+              PANEL · EN VIVO
+            </span>
+            <span data-clock>00:00:00</span>
+          </div>
+          <div class="flex justify-between items-end gap-3">
+            <div class="flex flex-col gap-1">
+              <span class="font-univia-ultra font-bold text-[40px] leading-none" data-kpi>94%</span>
+              <span class="font-roboto-mono text-[11px]">Entregables a tiempo</span>
+            </div>
+            <div class="excel-to-system__bars" data-bars>
+              {
+                BARS.map((v, i) => (
+                  <div
+                    class="excel-to-system__bar"
+                    data-bar={i}
+                    style={{ height: `${v}%`, opacity: i === BARS.length - 1 ? 1 : 0.55 }}
+                  />
+                ))
+              }
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 excel-to-system__dash-footer">
+            <div class="flex flex-col gap-0.5">
+              <span class="font-univia-ultra font-bold text-base" data-margin>23,4%</span>
+              <span class="font-roboto-mono text-[10.5px]">Margen por proyecto</span>
+            </div>
+            <div class="flex flex-col gap-0.5">
+              <span class="font-univia-ultra font-bold text-base" data-load>81%</span>
+              <span class="font-roboto-mono text-[10.5px]">Carga del equipo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script is:inline define:vars={{ rootId }}>
+  (() => {
+    const root = document.getElementById(rootId);
+    if (!root) return;
+
+    const CELLS = JSON.parse(root.getAttribute("data-cells") || "[]");
+    const MODS = JSON.parse(root.getAttribute("data-mods") || "[]");
+    const FILE_LABELS = JSON.parse(root.getAttribute("data-file-labels") || "[]");
+    const STATUS_LABELS = JSON.parse(root.getAttribute("data-status-labels") || "[]");
+    const BARS = JSON.parse(root.getAttribute("data-bars") || "[]");
+    const DOT_COLORS = ["#DD3636", "#EDC14F", "#00C800"];
+    const autoplay = root.getAttribute("data-autoplay") === "true";
+    const duration = Number(root.getAttribute("data-duration")) || 6000;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const HX = 8, HY = 6.5, CW = 23, RH = (100 - HY) / 6;
+    const pct = (v) => `${v.toFixed(3)}%`;
+
+    const cellRect0 = (i) => ({ l: HX + (i % 4) * CW, t: HY + Math.floor(i / 4) * RH, w: CW, h: RH });
+    const modRect = (m, stage) => {
+      if (stage === 1) {
+        const w = 48.75, h = (100 - 5) / 3;
+        return { l: (m % 2) * (w + 2.5), t: Math.floor(m / 2) * (h + 2.5), w, h };
+      }
+      const w = (100 - 5) / 3, h = (100 - 57 - 2.5) / 2;
+      return { l: (m % 3) * (w + 2.5), t: 57 + Math.floor(m / 3) * (h + 2.5), w, h };
+    };
+
+    const stepButtons = Array.from(root.querySelectorAll("[data-step]"));
+    const cellEls = Array.from(root.querySelectorAll("[data-cell]"));
+    const modEls = Array.from(root.querySelectorAll("[data-mod]"));
+    const sheetEl = root.querySelector("[data-sheet]");
+    const headerEls = Array.from(root.querySelectorAll(".excel-to-system__header"));
+    const dashEl = root.querySelector("[data-dash]");
+    const fileLabelEl = root.querySelector("[data-file-label]");
+    const statusLabelEl = root.querySelector("[data-status-label]");
+    const dotEl = root.querySelector("[data-dot]");
+    const clockEl = root.querySelector("[data-clock]");
+    const blinkEl = root.querySelector("[data-blink]");
+    const barEls = Array.from(root.querySelectorAll("[data-bar]"));
+
+    let stage = 0;
+    let elapsed = 0;
+    let lastTick = Date.now();
+    let stageTimer = null;
+    let liveTimer = null;
+    let clockTimer = null;
+
+    function applyStage(newStage) {
+      stage = newStage;
+
+      cellEls.forEach((el, i) => {
+        const m = i % 6;
+        const r = stage === 0 ? cellRect0(i) : modRect(m, stage);
+        const delay = ((stage === 0 ? 5 - m : m) * 60 + Math.floor(i / 6) * 25);
+        el.style.transitionDelay = reduceMotion ? "0ms" : `${delay}ms`;
+        el.style.left = pct(r.l);
+        el.style.top = pct(r.t);
+        el.style.width = pct(r.w);
+        el.style.height = pct(r.h);
+        el.style.background = stage > 0 ? "#FFFFFF" : CELLS[i].kind === "y" ? "#F6E0A7" : CELLS[i].kind === "h" ? "#FAF9FE" : "#FFFFFF";
+        el.style.borderRadius = stage > 0 ? "8px" : "0px";
+        el.style.boxShadow = stage > 0 ? "none" : "inset 0 0 0 0.5px #C6C6D9";
+        const text = el.querySelector("[data-cell-text]");
+        if (text) text.style.opacity = stage === 0 ? "1" : "0";
+      });
+
+      modEls.forEach((el, m) => {
+        const r = modRect(m, stage);
+        el.style.transitionDelay = reduceMotion ? "0ms" : stage === 0 ? "0ms" : "500ms";
+        el.style.left = pct(r.l);
+        el.style.top = pct(r.t);
+        el.style.width = pct(r.w);
+        el.style.height = pct(r.h);
+        el.style.opacity = stage === 0 ? "0" : "1";
+        const full = el.querySelector("[data-mod-full]");
+        const mini = el.querySelector("[data-mod-mini]");
+        if (full) full.style.opacity = stage === 1 ? "1" : "0";
+        if (mini) mini.style.opacity = stage === 2 ? "1" : "0";
+      });
+
+      if (sheetEl) sheetEl.style.opacity = stage === 0 ? "1" : "0";
+      headerEls.forEach((el) => { el.style.opacity = stage === 0 ? "1" : "0"; });
+      if (dashEl) {
+        dashEl.style.opacity = stage === 2 ? "1" : "0";
+        dashEl.style.transform = stage === 2 ? "scale(1)" : "scale(.92)";
+        dashEl.style.transitionDelay = reduceMotion ? "0ms" : stage === 2 ? "500ms" : "0ms";
+      }
+
+      if (fileLabelEl) fileLabelEl.textContent = FILE_LABELS[stage] ?? "";
+      if (statusLabelEl) statusLabelEl.textContent = STATUS_LABELS[stage] ?? "";
+      if (dotEl) dotEl.style.background = DOT_COLORS[stage];
+
+      stepButtons.forEach((btn, i) => {
+        btn.style.opacity = i === stage ? "1" : "0.5";
+        btn.setAttribute("aria-current", i === stage ? "true" : "false");
+        const fill = btn.querySelector("[data-progress-fill]");
+        const text = btn.querySelector(".excel-to-system__step-text");
+        if (fill) {
+          fill.style.transitionDuration = "0ms";
+          fill.style.width = i < stage ? "100%" : "0%";
+        }
+        if (text) text.style.display = i === stage ? "block" : "none";
+      });
+    }
+
+    function goTo(newStage) {
+      elapsed = 0;
+      applyStage(newStage);
+      const activeFill = stepButtons[newStage]?.querySelector("[data-progress-fill]");
+      if (activeFill) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            activeFill.style.transitionDuration = `${duration}ms`;
+            activeFill.style.width = "100%";
+          });
+        });
+      }
+    }
+
+    stepButtons.forEach((btn, i) => {
+      btn.addEventListener("click", () => goTo(i));
+    });
+
+    function tickClock() {
+      const d = new Date();
+      const z = (n) => String(n).padStart(2, "0");
+      if (clockEl) clockEl.textContent = `${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
+      if (blinkEl) blinkEl.style.opacity = d.getSeconds() % 2 ? "1" : "0.3";
+    }
+
+    let bars = BARS.slice();
+    function tickBars() {
+      bars = bars.slice(1);
+      const last = bars[bars.length - 1];
+      bars.push(Math.max(30, Math.min(98, last + (Math.random() * 16 - 8))));
+      const max = Math.max(...bars);
+      barEls.forEach((el, i) => {
+        el.style.height = `${(bars[i] / max) * 100}%`;
+        el.style.opacity = i === barEls.length - 1 ? "1" : "0.55";
+      });
+    }
+
+    function stopTimers() {
+      if (stageTimer !== null) { window.clearInterval(stageTimer); stageTimer = null; }
+      if (liveTimer !== null) { window.clearInterval(liveTimer); liveTimer = null; }
+      if (clockTimer !== null) { window.clearInterval(clockTimer); clockTimer = null; }
+    }
+
+    function startTimers() {
+      stopTimers();
+
+      clockTimer = window.setInterval(tickClock, 1000);
+      liveTimer = window.setInterval(tickBars, 1400);
+
+      if (autoplay) {
+        lastTick = Date.now();
+        stageTimer = window.setInterval(() => {
+          const now = Date.now();
+          elapsed += now - lastTick;
+          lastTick = now;
+          if (elapsed >= duration) {
+            goTo((stage + 1) % 3);
+          }
+        }, 100);
+      }
+    }
+
+    tickClock();
+    goTo(0);
+    startTimers();
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stopTimers();
+      } else {
+        startTimers();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    document.addEventListener(
+      "astro:before-swap",
+      () => {
+        stopTimers();
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      },
+      { once: true },
+    );
+  })();
+</script>
+
+<style>
+  .excel-to-system {
+    padding: 48px 10px 56px;
+  }
+
+  .excel-to-system__grid {
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    gap: 40px;
+    align-items: center;
+  }
+
+  .excel-to-system__step {
+    background: transparent;
+    border: none;
+  }
+
+  .excel-to-system__progress {
+    position: relative;
+    height: 2px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+  }
+
+  .excel-to-system__progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0%;
+    background: var(--color-secondary);
+    transition: width 0ms linear;
+  }
+
+  .excel-to-system__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #dd3636;
+    transition: background 0.3s;
+  }
+
+  .excel-to-system__screen {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+  }
+
+  .excel-to-system__sheet {
+    position: absolute;
+    inset: 0;
+    background: #c6c6d9;
+    border-radius: 4px;
+    transition: opacity 0.4s;
+  }
+
+  .excel-to-system__header {
+    position: absolute;
+    background: #e5e5f2;
+    box-shadow: inset 0 0 0 0.5px #c6c6d9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #68688a;
+    transition: opacity 0.4s;
+  }
+
+  .excel-to-system__cell {
+    position: absolute;
+    padding: 6px;
+    overflow: hidden;
+    font-size: 10.5px;
+    line-height: 1.25;
+    transition-property: left, top, width, height, background, border-radius, box-shadow;
+    transition-duration: 0.8s, 0.8s, 0.8s, 0.8s, 0.4s, 0.6s, 0.4s;
+    transition-timing-function: cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .excel-to-system__cell [data-cell-text] {
+    word-break: break-word;
+    transition: opacity 0.25s;
+  }
+
+  .excel-to-system__mod {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    transition-property: left, top, width, height, opacity;
+    transition-duration: 0.8s, 0.8s, 0.8s, 0.8s, 0.35s;
+    transition-timing-function: cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .excel-to-system__mod-full,
+  .excel-to-system__mod-mini {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.3s;
+  }
+
+  .excel-to-system__mod-full {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    opacity: 0;
+  }
+
+  .excel-to-system__mod-mini {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    opacity: 0;
+  }
+
+  .excel-to-system__dash {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 54%;
+    background: var(--color-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: var(--color-primary);
+    opacity: 0;
+    transform: scale(0.92);
+    transform-origin: 50% 100%;
+    transition: opacity 0.45s, transform 0.6s cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .excel-to-system__dash-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    transition: opacity 0.3s;
+  }
+
+  .excel-to-system__bars {
+    display: flex;
+    gap: 3px;
+    align-items: flex-end;
+    height: 56px;
+    flex: 0 1 50%;
+  }
+
+  .excel-to-system__bar {
+    flex: 1;
+    background: var(--color-primary);
+    border-radius: 1px;
+    transition: height 0.6s cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .excel-to-system__dash-footer {
+    border-top: 1px solid rgba(0, 0, 108, 0.25);
+    padding-top: 10px;
+  }
+</style>
