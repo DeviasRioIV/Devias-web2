@@ -1,0 +1,71 @@
+---
+// Preset del caso "De Excel a sistema": compone el shell generico
+// <CaseStudyReveal> (titulo + pasos + autoplay) con la visualizacion
+// <ExcelToSystemVisual> (planilla -> modulos -> panel en vivo). Se mantiene
+// como componente aparte para no tener que tocar las paginas que ya lo usan;
+// un caso de estudio nuevo con otra animacion compone esos dos componentes
+// directamente en vez de pasar por este preset.
+import CaseStudyReveal from "./components/CaseStudyReveal.astro";
+import ExcelToSystemVisual from "./components/ExcelToSystemVisual.astro";
+
+interface Step {
+  title: string;
+  text: string;
+}
+
+interface Mod {
+  name: string;
+  sub: string;
+  value: string;
+}
+
+interface Cell {
+  text: string;
+  kind: "" | "h" | "y" | "e";
+}
+
+interface Props {
+  eyebrow?: string;
+  titleNormal?: string;
+  titleBold?: string;
+  steps?: Step[];
+  mods?: Mod[];
+  cells?: Cell[];
+  fileLabels?: [string, string, string];
+  statusLabels?: [string, string, string];
+  autoplay?: boolean;
+  duration?: number;
+  class?: string;
+}
+
+const {
+  eyebrow = "Caso · Industria BIM",
+  titleNormal = "De una planilla de Excel",
+  titleBold = "a un sistema que sostiene toda la operación.",
+  steps = [
+    {
+      title: "La planilla",
+      text: "Todo vivía en un Excel: versiones cruzadas, fórmulas rotas y datos que sólo entendía quien los cargó.",
+    },
+    {
+      title: "Procesos formalizados",
+      text: "Relevamos cada proceso, lo estandarizamos y lo convertimos en un módulo con reglas, responsables y datos propios.",
+    },
+    {
+      title: "Decisiones en tiempo real",
+      text: "La dirección decide con lo que pasa hoy, no con lo que se cargó el mes pasado.",
+    },
+  ],
+  mods,
+  cells,
+  fileLabels,
+  statusLabels,
+  autoplay = true,
+  duration = 6000,
+  class: className = "",
+} = Astro.props as Props;
+---
+
+<CaseStudyReveal eyebrow={eyebrow} titleNormal={titleNormal} titleBold={titleBold} steps={steps} autoplay={autoplay} duration={duration} class={className}>
+  <ExcelToSystemVisual mods={mods} cells={cells} fileLabels={fileLabels} statusLabels={statusLabels} />
+</CaseStudyReveal>

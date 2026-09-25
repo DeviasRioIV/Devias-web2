@@ -1,0 +1,217 @@
+---
+// Cascara reutilizable para casos de estudio animados: eyebrow + titulo +
+// lista de pasos con barra de progreso y autoplay. La visualizacion (lo que
+// va a la derecha) es contenido de `<slot />`, así este componente no sabe
+// nada sobre lo que anima — solo avisa de sus cambios de paso.
+//
+// Contrato con la visualizacion: cada vez que cambia de paso (por click o por
+// autoplay) se dispara un CustomEvent `casestudy:stagechange` en la raíz del
+// componente, con `detail: { stage, duration }`. Una visualizacion slotteada
+// busca su ancestro más cercano con `[data-case-study]` y escucha ahí.
+interface Step {
+  title: string;
+  text: string;
+}
+
+interface Props {
+  eyebrow?: string;
+  titleNormal?: string;
+  titleBold?: string;
+  steps: Step[];
+  autoplay?: boolean;
+  duration?: number;
+  class?: string;
+}
+
+const {
+  eyebrow,
+  titleNormal,
+  titleBold,
+  steps,
+  autoplay = true,
+  duration = 6000,
+  class: className = "",
+} = Astro.props as Props;
+
+const rootId = `case-study-${crypto.randomUUID()}`;
+---
+
+<section
+  id={rootId}
+  data-case-study
+  class={`case-study-reveal bg-primary text-white ${className}`.trim()}
+  data-autoplay={String(autoplay)}
+  data-duration={String(duration)}
+>
+  <div class="case-study-reveal__grid">
+    <div class="flex flex-col gap-8 max-w-115 mx-auto md:mx-0">
+      <div class="flex flex-col gap-4">
+        {eyebrow && <div class="font-roboto-mono text-xs uppercase tracking-wider text-secondary">{eyebrow}</div>}
+        {
+          (titleNormal || titleBold) && (
+            <h2 class="font-univia-ultra text-[32px] leading-tight">
+              {titleNormal} <b class="font-black">{titleBold}</b>
+            </h2>
+          )
+        }
+      </div>
+
+      <div class="flex flex-col gap-2" data-steps>
+        {
+          steps.map((step, i) => (
+            <button
+              type="button"
+              class="case-study-reveal__step flex flex-col gap-2.5 py-3.5 text-left cursor-pointer"
+              data-step={i}
+              aria-current={i === 0 ? "true" : "false"}
+            >
+              <div class="case-study-reveal__progress">
+                <div class="case-study-reveal__progress-fill" data-progress-fill />
+              </div>
+              <div class="flex gap-3 items-baseline">
+                <span class="font-roboto-mono text-xs text-secondary">0{i + 1}</span>
+                <span class="font-univia-ultra font-bold text-base">{step.title}</span>
+              </div>
+              <p class="case-study-reveal__step-text font-roboto text-sm leading-relaxed text-white/75 pl-8">
+                {step.text}
+              </p>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="case-study-reveal__visual w-full max-w-115 mx-auto">
+      <slot />
+    </div>
+  </div>
+</section>
+
+<script is:inline define:vars={{ rootId }}>
+  (() => {
+    const root = document.getElementById(rootId);
+    if (!root) return;
+
+    const autoplay = root.getAttribute("data-autoplay") === "true";
+    const duration = Number(root.getAttribute("data-duration")) || 6000;
+
+    const stepButtons = Array.from(root.querySelectorAll("[data-step]"));
+    if (stepButtons.length === 0) return;
+
+    let stage = 0;
+    let elapsed = 0;
+    let lastTick = Date.now();
+    let stageTimer = null;
+
+    function setStage(newStage) {
+      stage = newStage;
+      elapsed = 0;
+
+      stepButtons.forEach((btn, i) => {
+        btn.style.opacity = i === stage ? "1" : "0.5";
+        btn.setAttribute("aria-current", i === stage ? "true" : "false");
+        const fill = btn.querySelector("[data-progress-fill]");
+        const text = btn.querySelector(".case-study-reveal__step-text");
+        if (fill) {
+          fill.style.transitionDuration = "0ms";
+          fill.style.width = i < stage ? "100%" : "0%";
+        }
+        if (text) text.style.display = i === stage ? "block" : "none";
+      });
+
+      root.dispatchEvent(new CustomEvent("casestudy:stagechange", { detail: { stage, duration } }));
+
+      const activeFill = stepButtons[stage]?.querySelector("[data-progress-fill]");
+      if (activeFill) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            activeFill.style.transitionDuration = `${duration}ms`;
+            activeFill.style.width = "100%";
+          });
+        });
+      }
+    }
+
+    stepButtons.forEach((btn, i) => {
+      btn.addEventListener("click", () => setStage(i));
+    });
+
+    function stopTimer() {
+      if (stageTimer !== null) {
+        window.clearInterval(stageTimer);
+        stageTimer = null;
+      }
+    }
+
+    function startTimer() {
+      stopTimer();
+      if (!autoplay) return;
+      lastTick = Date.now();
+      stageTimer = window.setInterval(() => {
+        const now = Date.now();
+        elapsed += now - lastTick;
+        lastTick = now;
+        if (elapsed >= duration) {
+          setStage((stage + 1) % stepButtons.length);
+        }
+      }, 100);
+    }
+
+    setStage(0);
+    startTimer();
+
+    const onVisibilityChange = () => {
+      if (document.hidden) stopTimer();
+      else startTimer();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    document.addEventListener(
+      "astro:before-swap",
+      () => {
+        stopTimer();
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      },
+      { once: true },
+    );
+  })();
+</script>
+
+<style>
+  .case-study-reveal {
+    padding: 48px 10px 56px;
+  }
+
+  .case-study-reveal__grid {
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    gap: 40px;
+    align-items: center;
+  }
+
+  .case-study-reveal__step {
+    background: transparent;
+    border: none;
+  }
+
+  .case-study-reveal__progress {
+    position: relative;
+    height: 2px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+  }
+
+  .case-study-reveal__progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0%;
+    background: var(--color-secondary);
+    transition: width 0ms linear;
+  }
+</style>
