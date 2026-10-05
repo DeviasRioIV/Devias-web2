@@ -7,10 +7,11 @@ import ErrorWindows from '../../components/ErrorWindows/ErrorWindows.astro';
 import TwoStepsContactForm from '../../components/TwoStepsContactForm/TwoStepsContactForm.astro';
 import SimpleContactForm from '../../components/SimpleContactForm/ContactForm.astro';
 import { getTranslations } from '../../i18n/utils';
-// import GridBackground from '../../components/GridBackground.astro';
+import GridBackground from '../../components/GridBackground.astro';
 import Footer from '../../components/Footer.astro';
-// import { ArrowRight } from '@lucide/astro';
+import { ArrowRight } from '@lucide/astro';
 import ImageTilesTransition from '../../components/ImageTilesTransition.astro';
+import ProgressSteps from '../../components/ProgressSteps/ProgressSteps.astro';
 
 const teamImages = Array.from({ length: 5 }, (_, index) => {
   const image = `/images/team/devias-team-dither-dark-${index + 1}`;
@@ -100,6 +101,8 @@ const seo = lang === 'en'
   
     <DiagnosticSteps t={t.homeTexts.diagnosticSteps} />
 
+    <!-- <ProgressSteps /> -->
+
     <section class="md:max-h-175 md:h-175 h-auto w-full mt-12 md:mt-36 overflow-hidden flex justify-center items-center relative">
 
       <ImageTilesTransition
@@ -119,9 +122,9 @@ const seo = lang === 'en'
 
     </section>
   
-    <!-- <div class="relative w-full py-25 px-2.5 mt-12 md:p-0" id="our-clients">
+    <div class="relative w-full py-25 px-2.5 mt-12 md:p-0" id="our-clients">
 
-      <div class="md:max-w-186.5 md:mx-auto md:py-24">
+      <!-- <div class="md:max-w-186.5 md:mx-auto md:py-24">
         <GridBackground />
     
         <h3 class="flex flex-col">
@@ -131,23 +134,23 @@ const seo = lang === 'en'
         </h3>
   
         <div class="grid grid-cols-2 grid-rows-[154px_154px] gap-1.75 mt-10 md:grid-rows-[220px_220px]">
-          <button class="relative flex items-center justify-center bg-white border border-outline rounded-lg row-span-2 p-8 md:p-14 cursor-pointer" aria-label="Bucked Up">
-            <span class="client-logo" style="--logo: url('/logos/projects/bucked.png')"></span>
+          <a href={`/${lang}/projects/bucked-up/`} style="view-transition-name: card-bucked-up" class="relative flex items-center justify-center bg-white border-2 border-outline rounded-lg row-span-2 p-8 md:p-14 hover:border-primary transition duration-300" aria-label="Bucked Up">
+            <span class="client-logo" style="--logo: url('/logos/projects/buckedUp/bucked.png'); view-transition-name: logo-bucked-up"></span>
             <ArrowRight class="absolute right-5 top-5 stroke-primary w-6 h-6" />
-          </button>
+          </a>
 
-          <button class="relative flex items-center justify-center bg-white border border-outline rounded-lg p-6 pr-14 md:p-10 md:pr-16 cursor-pointer" aria-label="Hexagon">
-            <span class="client-logo" style="--logo: url('/logos/projects/hexagon.png')"></span>
+          <a href={`/${lang}/projects/hexagon/`} style="view-transition-name: card-hexagon" class="relative flex items-center justify-center bg-white border-2 border-outline rounded-lg p-6 pr-14 md:p-10 md:pr-16 hover:border-primary transition duration-300" aria-label="Hexagon">
+            <span class="client-logo" style="--logo: url('/logos/projects/hexagon/hexagon.png'); view-transition-name: logo-hexagon"></span>
             <ArrowRight class="absolute right-5 top-5 stroke-primary w-6 h-6" />
-          </button>
+          </a>
 
-          <button class="relative flex items-center justify-center bg-white border border-outline rounded-lg p-6 pr-14 md:p-10 md:pr-16 cursor-pointer" aria-label="Reef Check">
-            <span class="client-logo" style="--logo: url('/logos/projects/reefCheck.png')"></span>
+          <a href={`/${lang}/projects/reef-check/`} style="view-transition-name: card-reef-check" class="relative flex items-center justify-center bg-white border-2 border-outline rounded-lg p-6 pr-14 md:p-10 md:pr-16 hover:border-primary transition duration-300" aria-label="Reef Check">
+            <span class="client-logo" style="--logo: url('/logos/projects/reefCheck/reefCheck.png'); view-transition-name: logo-reef-check"></span>
             <ArrowRight class="absolute right-5 top-5 stroke-primary w-6 h-6" />
-          </button>
+          </a>
         </div>
-      </div>
-    </div> -->
+      </div> -->
+    </div>
   
     <div class='flex flex-col px-2.5 my-12 md:max-w-205 md:mx-auto md:py-36'>
       <h5 class="font-univia-ultra text-[40px] text-primary uppercase md:text-[64px] md:leading-[110%]">

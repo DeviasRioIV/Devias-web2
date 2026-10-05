@@ -125,6 +125,12 @@
       "subtitle": "Digital products"
     }
   },
+  "projectPage": {
+    "industry": "Industry",
+    "region": "Region",
+    "closingTitle": ["An operation that scales", "and a system that", "keeps up."],
+    "cta": "I want to scale<br>without friction"
+  },
   "footer": {
     "aboutUs": {
       "links": [

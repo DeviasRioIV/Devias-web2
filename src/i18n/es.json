@@ -125,6 +125,12 @@
       "subtitle": "Digital products"
     }
   },
+  "projectPage": {
+    "industry": "Industria",
+    "region": "Región",
+    "closingTitle": ["Una operación que escala", "y un sistema que", "la acompaña."],
+    "cta": "Quiero escalar<br>sin fricción"
+  },
   "footer": {
     "aboutUs": {
       "links": [

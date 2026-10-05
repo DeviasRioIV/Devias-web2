@@ -1,0 +1,120 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Footer from '../../../components/Footer.astro';
+import ProgressSteps from '../../../components/ProgressSteps/ProgressSteps.astro';
+import { ArrowRight } from '@lucide/astro';
+import { getTranslations } from '../../../i18n/utils';
+import { projects, getProject } from '../../../data/projects';
+
+export function getStaticPaths() {
+  return ['es', 'en'].flatMap((lang) =>
+    projects.map((project) => ({ params: { lang, slug: project.slug } })),
+  );
+}
+
+const { lang = 'es', slug } = Astro.params;
+const project = getProject(slug)!;
+const t = getTranslations(lang);
+const copy = project.copy[lang as 'es' | 'en'];
+const homeUrl = `/${lang}/`;
+
+// Los links del header/footer son anclas de la home (#...). Desde una página
+// de proyecto hay que apuntarlos a la home para que naveguen en vez de no hacer nada.
+const toHome = <T extends { href: string }>(link: T): T =>
+  link.href.startsWith('#') ? { ...link, href: `${homeUrl}${link.href}` } : link;
+
+const header = {
+  ...t.header,
+  nav: t.header.nav.map(toHome),
+  cta: toHome(t.header.cta),
+};
+const footer = {
+  ...t.footer,
+  aboutUs: { ...t.footer.aboutUs, links: t.footer.aboutUs.links.map(toHome) },
+};
+const layoutT = { ...t, header };
+
+const otherProjects = projects.filter((p) => p.slug !== project.slug);
+const seo = {
+  title: `${project.name} | Devias`,
+  description: copy.description[0],
+};
+---
+
+<Layout lang={lang} t={layoutT} {...seo}>
+  <main class="bg-white rounded-b-lg z-10 relative pb-10">
+    <section class="bg-primary rounded-lg mx-2.5 px-5 py-8 md:max-w-6xl md:mx-auto md:px-10 md:py-12">
+      <h1 class="font-univia-ultra text-[40px] leading-[100%] uppercase text-white md:text-[64px]">{project.name}</h1>
+
+      <dl class="grid grid-cols-2 gap-3 mt-12">
+        <div>
+          <dt class="font-roboto-mono text-xl uppercase text-secondary">{t.projectPage.industry}</dt>
+          <dd class="font-roboto text-lg text-white mt-1">{copy.industry}</dd>
+        </div>
+        <div>
+          <dt class="font-roboto-mono text-xl uppercase text-secondary">{t.projectPage.region}</dt>
+          <dd class="font-roboto text-lg text-white mt-1">{copy.region}</dd>
+        </div>
+      </dl>
+
+      <div style={`view-transition-name: card-${project.slug}`} class="bg-white rounded-sm mt-10 h-30 px-10 py-8 flex items-center justify-center md:h-44">
+        <img src={project.logo} alt={project.name} style={`view-transition-name: logo-${project.slug}`} class="max-h-full max-w-full object-contain" />
+      </div>
+    </section>
+
+    <div class="flex flex-col gap-8 px-2.5 py-10 md:max-w-6xl md:mx-auto">
+      {copy.description.map((paragraph) => (
+        <p class="font-roboto-mono text-[20px] text-black">{paragraph}</p>
+      ))}
+    </div>
+
+    <ProgressSteps />
+
+    <div class="flex flex-col gap-8 md:flex-row md:max-w-6xl md:mx-auto">
+      <h2 class="flex flex-col px-2.5 mt-12 md:w-1/2 md:mx-auto md:mt-24">
+        {t.projectPage.closingTitle.map((line, i) => (
+          <span class={`inline max-w-fit font-roboto text-[32px] mb-1 px-2 ${i === 0 ? 'bg-primary text-white' : 'bg-primary text-secondary font-bold'}`}>{line}</span>
+        ))}
+      </h2>
+  
+      <div class="px-2.5 md:mt-24 flex flex-col gap-1.75 md:max-w-6xl md:mx-auto md:w-1/2">
+        <a
+          href={`${homeUrl}#last-contact-form`}
+          class="h-38.5 bg-secondary rounded-lg p-6 flex flex-col justify-between"
+        >
+          <div class="flex justify-end">
+            <ArrowRight class="text-primary" />
+          </div>
+          <p class="text-primary text-2xl font-roboto text-start" set:html={t.projectPage.cta} />
+        </a>
+  
+        <div class="grid grid-cols-2 gap-1.75">
+          {otherProjects.map((other) => (
+            <a
+              href={`${homeUrl}projects/${other.slug}/`}
+              aria-label={other.name}
+              style={`view-transition-name: card-${other.slug}`}
+              class="relative flex items-center justify-center bg-white border border-outline rounded-lg h-38.5 p-6 pr-14 md:p-10 md:pr-16"
+            >
+              <span class="client-logo" style={`--logo: url('${other.logo}'); view-transition-name: logo-${other.slug}`}></span>
+              <ArrowRight class="absolute right-5 top-5 stroke-primary w-6 h-6" />
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer t={footer} />
+</Layout>
+
+<style>
+  .client-logo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-primary);
+    -webkit-mask: var(--logo) center / contain no-repeat;
+    mask: var(--logo) center / contain no-repeat;
+  }
+</style>

@@ -4,8 +4,12 @@ import { getRelativeLocaleUrl } from "astro:i18n";
 
 const { lang = "es", t } = Astro.props;
 
-const esUrl = getRelativeLocaleUrl("es", "");
-const enUrl = getRelativeLocaleUrl("en", "");
+// El toggle de idioma conserva la página actual: reemplaza solo el primer
+// segmento de la ruta (/es/projects/hexagon/ -> /en/projects/hexagon/).
+const switchLang = (target: string) =>
+  Astro.url.pathname.replace(/^\/(es|en)(?=\/|$)/, `/${target}`);
+const esUrl = switchLang("es");
+const enUrl = switchLang("en");
 const activeClass = "bg-primary text-white";
 const navLinks = t?.nav ?? [];
 ---

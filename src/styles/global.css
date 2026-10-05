@@ -11,8 +11,13 @@
   --color-outline: #E5E5F2;
 }
 
-html {
-  scroll-behavior: smooth;
+/* View Transitions entre documentos (MPA): el navegador hace morph de los
+   elementos con el mismo `view-transition-name` en la página de origen y la de
+   destino (cards/logos de proyecto). Sin soporte, la navegación es normal. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
 }
 
 /* Subrayado "a mano" que sigue cada renglón de un texto que hace wrap.
