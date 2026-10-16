@@ -12,10 +12,23 @@ interface ProjectCopy {
   description: string[];
 }
 
+// Qué bloque animado muestra cada proyecto. `type` es una clave del registro
+// `caseStudies` en la página del proyecto; `props` son los textos por idioma
+// (eyebrow, títulos, pasos…) que se pasan tal cual al componente y pisan sus
+// defaults. Si falta un idioma, el componente usa sus textos por defecto.
+// Es JSON puro, así que se puede guardar en una DB.
+export type CaseStudyType = 'excel-to-system' | 'reef-check';
+
+interface CaseStudyConfig {
+  type: CaseStudyType;
+  props?: Partial<Record<Lang, Record<string, unknown>>>;
+}
+
 interface Project {
   slug: ProjectSlug;
   name: string;
   logo: string;
+  caseStudy: CaseStudyConfig;
   copy: Record<Lang, ProjectCopy>;
 }
 
@@ -24,6 +37,7 @@ export const projects: Project[] = [
     slug: 'bucked-up',
     name: 'Bucked Up',
     logo: '/logos/projects/buckedUp/buckedup_web.webp',
+    caseStudy: { type: 'excel-to-system' },
     copy: {
       es: {
         industry: 'E-commerce',
@@ -47,6 +61,7 @@ export const projects: Project[] = [
     slug: 'hexagon',
     name: 'Hexagon Multivista',
     logo: '/logos/projects/hexagon/hexagon_multivista.png',
+    caseStudy: { type: 'excel-to-system' },
     copy: {
       es: {
         industry: 'BIM',
@@ -70,6 +85,49 @@ export const projects: Project[] = [
     slug: 'reef-check',
     name: 'Reef Check',
     logo: '/logos/projects/reefCheck/reefCheck.png',
+    caseStudy: {
+      type: 'reef-check',
+      props: {
+        en: {
+          eyebrow: 'Case · Environmental Nonprofit',
+          titleNormal: 'From scattered field notes',
+          titleBold: 'to reef data the world can use.',
+          steps: [
+            {
+              title: 'Distributed collection',
+              text: 'Trained divers survey reefs in 102 countries and territories. That data is only valuable if it is captured consistently and stays traceable.',
+            },
+            {
+              title: 'A platform for survey data',
+              text: 'We helped build a platform to collect, manage and administer survey data, designed around Reef Check’s real monitoring process.',
+            },
+            {
+              title: 'Part of a larger mission',
+              text: 'Field observations become structured information for reports and global statistics that help understand and protect reef ecosystems.',
+            },
+          ],
+        },
+        es: {
+          eyebrow: 'Caso · ONG ambiental',
+          titleNormal: 'De notas de campo dispersas',
+          titleBold: 'a datos de arrecifes que el mundo puede usar.',
+          steps: [
+            {
+              title: 'Recolección distribuida',
+              text: 'Buzos entrenados relevan arrecifes en 102 países y territorios. Esos datos solo tienen valor si se capturan de forma consistente y se mantienen trazables.',
+            },
+            {
+              title: 'Una plataforma para los datos de relevamiento',
+              text: 'Ayudamos a construir una plataforma para recolectar, gestionar y administrar los datos de los relevamientos, diseñada en torno al proceso real de monitoreo de Reef Check.',
+            },
+            {
+              title: 'Parte de una misión más grande',
+              text: 'Las observaciones de campo se convierten en información estructurada para informes y estadísticas globales que ayudan a comprender y proteger los ecosistemas de arrecifes.',
+            },
+          ],
+        },
+      },
+    },
     copy: {
       es: {
         industry: 'Conservación marina',

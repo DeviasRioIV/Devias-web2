@@ -1,0 +1,51 @@
+---
+// Preset del caso Reef Check: compone el shell generico <CaseStudyReveal>
+// (eyebrow + titulo + pasos + autoplay) con <ReefCheckVisual>. Los textos
+// default son los del caso real; todo se puede pisar por props.
+import CaseStudyReveal from "./components/CaseStudyReveal.astro";
+import ReefCheckVisual from "./components/ReefCheckVisual.astro";
+
+interface Step {
+  title: string;
+  text: string;
+}
+
+interface Props {
+  eyebrow?: string;
+  titleNormal?: string;
+  titleBold?: string;
+  steps?: Step[];
+  visual?: Record<string, unknown>;
+  autoplay?: boolean;
+  duration?: number;
+  class?: string;
+}
+
+const {
+  eyebrow = "Case · Environmental Nonprofit",
+  titleNormal = "From scattered field notes",
+  titleBold = "to reef data the world can use.",
+  steps = [
+    {
+      title: "Distributed collection",
+      text: "Trained divers survey reefs in 102 countries and territories. That data is only valuable if it is captured consistently and stays traceable.",
+    },
+    {
+      title: "A platform for survey data",
+      text: "We helped build a platform to collect, manage and administer survey data, designed around Reef Check’s real monitoring process.",
+    },
+    {
+      title: "Part of a larger mission",
+      text: "Field observations become structured information for reports and global statistics that help understand and protect reef ecosystems.",
+    },
+  ],
+  visual = {},
+  autoplay = true,
+  duration = 5000,
+  class: className = "",
+} = Astro.props as Props;
+---
+
+<CaseStudyReveal eyebrow={eyebrow} titleNormal={titleNormal} titleBold={titleBold} steps={steps} autoplay={autoplay} duration={duration} class={className}>
+  <ReefCheckVisual {...visual} />
+</CaseStudyReveal>

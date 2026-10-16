@@ -1,0 +1,459 @@
+---
+// Visualizacion animada de Reef Check: notas de campo sueltas -> registros
+// estandarizados -> panel global en vivo. Pensada para ir dentro del `<slot />`
+// de <CaseStudyReveal>: no dibuja pasos ni titulo, solo escucha el evento
+// `casestudy:stagechange` del ancestro `[data-case-study]` y se anima segun el
+// `stage` recibido. Todos los textos entran por props (con los del caso real
+// como default), asi el contenido puede venir de `data/projects.ts` o de una DB.
+type SlateKind = "" | "y" | "e";
+
+interface SiteRecord {
+  id: string;
+  site: string;
+  country: string;
+  indicator: string;
+  count: string;
+  /** Lo que el buzo anota en la pizarra (etapa 1): [texto, "y" dudoso | "e" falta dato | "" normal]. */
+  slate: [string, SlateKind][];
+}
+
+interface Stage {
+  file: string;
+  status: string;
+}
+
+interface Panel {
+  label: string;
+  kpi: { value: string; label: string };
+  regions: string[];
+  tickerLabel: string;
+}
+
+interface Props {
+  records?: SiteRecord[];
+  stages?: [Stage, Stage, Stage];
+  columns?: [string, string, string, string];
+  panel?: Panel;
+  class?: string;
+}
+
+const {
+  records = [
+    { id: "RC-0411", site: "Moray Garden", country: "Dahab, Egypt", indicator: "Giant clam", count: "4", slate: [["moray gdn – dahab", ""], ["clams 4", ""], ["depth?", "y"]] },
+    { id: "RC-0412", site: "Abu Helal", country: "Dahab, Egypt", indicator: "Butterflyfish", count: "9", slate: [["Abu Helal", ""], ["butterfly 9 / 7?", "y"], ["2 divers", ""]] },
+    { id: "RC-0413", site: "Tioman", country: "Malaysia", indicator: "Crown-of-thorns", count: "3", slate: [["tioman – 10m?", "y"], ["COTS 3", ""], ["date: ??", "e"]] },
+    { id: "RC-0414", site: "Phuket", country: "Thailand", indicator: "Humphead wrasse", count: "1", slate: [["PHUKET", ""], ["napoleon 1?", "y"], ["no photo", "e"]] },
+    { id: "RC-0415", site: "Great Bay", country: "St. Thomas, USVI", indicator: "Flamingo tongue", count: "6", slate: [["great bay 6.5m", ""], ["flamingo t. 6", ""], ["transect 2 missing", "e"]] },
+    { id: "RC-0416", site: "Grass Cay", country: "St. Thomas, USVI", indicator: "Diadema urchin", count: "4", slate: [["grass cay", ""], ["diadema: 4", ""], ["depth ft or m?", "y"]] },
+    { id: "RC-0417", site: "Pt. Cabrillo", country: "Mendocino, California", indicator: "Red abalone", count: "22", slate: [["Pt Cabrillo SMR", ""], ["red ab 22", ""], ["vis bad", "y"]] },
+    { id: "RC-0418", site: "Caspar North", country: "Mendocino, California", indicator: "Purple urchin", count: "27", slate: [["caspar N 2x", "y"], ["purp urchin 27", ""], ["time?", "e"]] },
+  ],
+  stages = [
+    { file: "field slates · 8 sites", status: "unstructured" },
+    { file: "platform / survey records", status: "standardized & traceable" },
+    { file: "platform / global statistics", status: "live" },
+  ],
+  columns = ["ID", "Site", "Indicator", "Count"],
+  panel = {
+    label: "GLOBAL DATA · LIVE",
+    kpi: { value: "102", label: "countries & territories" },
+    regions: ["Indo-Pacific", "Caribbean", "Red Sea", "California"],
+    tickerLabel: "Latest synced record",
+  },
+  class: className = "",
+} = Astro.props as Props;
+
+const REGION_START = [88, 62, 41, 55];
+
+// Estado inicial (etapa 0): cada registro desparramado como una nota suelta.
+// El script del cliente recalcula estos mismos rectangulos para las otras etapas.
+const SCATTER = [[2, 3, -4], [52, 6, 3], [28, 22, -2], [4, 40, 5], [56, 35, -5], [30, 56, 2], [3, 74, -3], [54, 72, 4]];
+const pct = (v: number) => `${v.toFixed(3)}%`;
+const scatter = (i: number) => {
+  const [l, t, rot] = SCATTER[i % SCATTER.length];
+  return { left: pct(l), top: pct(t), width: pct(44), height: pct(17), transform: `rotate(${rot}deg)` };
+};
+
+const rootId = `reef-check-visual-${crypto.randomUUID()}`;
+---
+
+<div
+  id={rootId}
+  class={`reef-visual flex flex-col gap-3 w-full ${className}`.trim()}
+  data-records={JSON.stringify(records.map(({ id, site, country, indicator }) => ({ id, site, country, indicator })))}
+  data-stages={JSON.stringify(stages)}
+  data-region-count={panel.regions.length}
+>
+  <div class="flex justify-between items-center font-roboto-mono text-xs text-white/75">
+    <span data-file-label>{stages[0].file}</span>
+    <span class="flex gap-1.5 items-center">
+      <span class="reef-visual__dot" data-dot></span>
+      <span data-status-label>{stages[0].status}</span>
+    </span>
+  </div>
+
+  <div class="reef-visual__screen">
+    <div class="reef-visual__field" data-field></div>
+
+    <div class="reef-visual__row-grid reef-visual__head font-roboto-mono" data-head>
+      <span>{columns[0]}</span><span>{columns[1]}</span><span>{columns[2]}</span><span class="text-right">{columns[3]}</span><span></span>
+    </div>
+
+    {
+      records.map((r, i) => (
+        <div class="reef-visual__rec" data-rec={i} style={scatter(i)}>
+          <div class="reef-visual__layer reef-visual__slate" data-slate>
+            {r.slate.map(([text, kind]) => (
+              <span class="reef-visual__slate-line font-roboto-mono" data-kind={kind}>{text}</span>
+            ))}
+          </div>
+
+          <div class="reef-visual__layer reef-visual__row-grid reef-visual__row" data-row>
+            <span class="font-roboto-mono text-[10px] text-[#68688a]">{r.id}</span>
+            <span class="flex flex-col gap-px min-w-0">
+              <span class="font-univia-ultra font-bold text-xs leading-[1.1] text-primary truncate">{r.site}</span>
+              <span class="font-roboto-mono text-[9.5px] text-[#666666] truncate">{r.country}</span>
+            </span>
+            <span class="font-roboto-mono text-[10.5px] text-[#333333] truncate">{r.indicator}</span>
+            <span class="font-roboto-mono text-[10.5px] text-primary text-right">{r.count}</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+          </div>
+
+          <div class="reef-visual__layer reef-visual__mini" data-mini>
+            <span class="font-univia-ultra font-bold text-xs leading-[1.1] text-primary truncate">{r.site}</span>
+            <span class="font-roboto-mono text-[10px] text-[#333333] whitespace-nowrap" data-mini-status>synced</span>
+          </div>
+        </div>
+      ))
+    }
+
+    <div class="reef-visual__dash" data-dash>
+      <div class="flex justify-between items-center font-roboto-mono text-[11px]">
+        <span class="flex gap-1.5 items-center">
+          <span class="reef-visual__dash-dot" data-blink></span>
+          {panel.label}
+        </span>
+        <span data-clock>00:00:00</span>
+      </div>
+
+      <div class="flex justify-between items-end gap-4">
+        <div class="flex flex-col gap-1">
+          <span class="font-univia-ultra font-bold text-[40px] leading-none">{panel.kpi.value}</span>
+          <span class="font-roboto-mono text-[11px]">{panel.kpi.label}</span>
+        </div>
+        <div class="flex flex-col gap-[5px] basis-[52%] shrink">
+          {
+            panel.regions.map((name, i) => (
+              <div class="grid grid-cols-[68px_1fr] gap-1.5 items-center">
+                <span class="font-roboto-mono text-[9.5px] whitespace-nowrap">{name}</span>
+                <div class="reef-visual__region-track">
+                  <div class="reef-visual__region-fill" data-region style={{ width: `${REGION_START[i % REGION_START.length]}%` }}></div>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-0.5 border-t border-primary/25 pt-2.5">
+        <span class="font-roboto-mono text-[10.5px]">{panel.tickerLabel}</span>
+        <span class="font-univia-ultra font-bold text-sm truncate" data-ticker></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline define:vars={{ rootId }}>
+  (() => {
+    const root = document.getElementById(rootId);
+    if (!root) return;
+
+    const host = root.closest("[data-case-study]");
+
+    const RECORDS = JSON.parse(root.getAttribute("data-records") || "[]");
+    const STAGES = JSON.parse(root.getAttribute("data-stages") || "[]");
+    const DOT_COLORS = ["#DD3636", "#EDC14F", "#00C800"];
+    const SCATTER = [[2, 3, -4], [52, 6, 3], [28, 22, -2], [4, 40, 5], [56, 35, -5], [30, 56, 2], [3, 74, -3], [54, 72, 4]];
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pct = (v) => `${v.toFixed(3)}%`;
+
+    const recEls = Array.from(root.querySelectorAll("[data-rec]"));
+    const regionEls = Array.from(root.querySelectorAll("[data-region]"));
+    const fieldEl = root.querySelector("[data-field]");
+    const headEl = root.querySelector("[data-head]");
+    const dashEl = root.querySelector("[data-dash]");
+    const fileLabelEl = root.querySelector("[data-file-label]");
+    const statusLabelEl = root.querySelector("[data-status-label]");
+    const dotEl = root.querySelector("[data-dot]");
+    const clockEl = root.querySelector("[data-clock]");
+    const blinkEl = root.querySelector("[data-blink]");
+    const tickerEl = root.querySelector("[data-ticker]");
+
+    const n = RECORDS.length;
+    let stage = 0;
+    let tick = 0;
+    let regions = regionEls.map((el) => parseFloat(el.style.width) || 50);
+
+    // Rectangulo de cada registro segun la etapa (en % de la pantalla).
+    const rect = (i) => {
+      if (stage === 0) {
+        const [l, t, rot] = SCATTER[i % SCATTER.length];
+        return { l, t, w: 44, h: 17, rot };
+      }
+      if (stage === 1) return { l: 0, t: 7.5 + i * 11.5, w: 100, h: 10.5, rot: 0 };
+      const h = (43 - 3 * 1.5) / 4;
+      const w = 48.75;
+      return { l: (i % 2) * (w + 2.5), t: 57 + Math.floor(i / 2) * (h + 1.5), w, h, rot: 0 };
+    };
+
+    function paintHot() {
+      const hot = tick % n;
+      recEls.forEach((el, i) => {
+        if (stage === 2) el.style.background = i === hot ? "#CAFCCA" : "#FFFFFF";
+        const status = el.querySelector("[data-mini-status]");
+        if (status) status.textContent = stage === 2 && i === hot ? "syncing…" : "synced";
+      });
+      const r = RECORDS[hot];
+      if (tickerEl && r) tickerEl.textContent = `${r.id} · ${r.site}, ${r.country} · ${r.indicator}`;
+    }
+
+    function applyStage(newStage) {
+      stage = newStage;
+      const d = (ms) => (reduceMotion ? "0ms" : ms);
+
+      recEls.forEach((el, i) => {
+        const g = rect(i);
+        const delay = d(`${i * 60}ms`);
+        // Orden de transition-property: left, top, width, height, transform, background, border-radius.
+        el.style.transitionDelay = `${delay}, ${delay}, ${delay}, ${delay}, ${delay}, 0ms, 0ms`;
+        el.style.left = pct(g.l);
+        el.style.top = pct(g.t);
+        el.style.width = pct(g.w);
+        el.style.height = pct(g.h);
+        el.style.transform = `rotate(${g.rot}deg)`;
+        el.style.background = stage === 0 ? "#FAF9FE" : "#FFFFFF";
+        el.style.borderRadius = stage === 0 ? "2px" : "4px";
+
+        const slate = el.querySelector("[data-slate]");
+        const row = el.querySelector("[data-row]");
+        const mini = el.querySelector("[data-mini]");
+        if (slate) slate.style.opacity = stage === 0 ? "1" : "0";
+        if (row) {
+          row.style.transitionDelay = d(stage === 1 ? "450ms" : "0ms");
+          row.style.opacity = stage === 1 ? "1" : "0";
+        }
+        if (mini) mini.style.opacity = stage === 2 ? "1" : "0";
+      });
+
+      if (fieldEl) fieldEl.style.opacity = stage === 0 ? "1" : "0";
+      if (headEl) {
+        headEl.style.transitionDelay = d(stage === 1 ? "500ms" : "0ms");
+        headEl.style.opacity = stage === 1 ? "1" : "0";
+      }
+      if (dashEl) {
+        dashEl.style.transitionDelay = d(stage === 2 ? "500ms" : "0ms");
+        dashEl.style.opacity = stage === 2 ? "1" : "0";
+        dashEl.style.transform = stage === 2 ? "scale(1)" : "scale(.92)";
+      }
+
+      if (fileLabelEl) fileLabelEl.textContent = STAGES[stage]?.file ?? "";
+      if (statusLabelEl) statusLabelEl.textContent = STAGES[stage]?.status ?? "";
+      if (dotEl) dotEl.style.background = DOT_COLORS[stage] ?? DOT_COLORS[0];
+      paintHot();
+    }
+
+    if (host) {
+      host.addEventListener("casestudy:stagechange", (e) => applyStage(e.detail.stage));
+    }
+
+    function tickClock() {
+      const now = new Date();
+      const z = (v) => String(v).padStart(2, "0");
+      if (clockEl) clockEl.textContent = `${z(now.getHours())}:${z(now.getMinutes())}:${z(now.getSeconds())}`;
+    }
+
+    // "Datos en vivo": avanza el registro sincronizandose y mueve las barras por region.
+    function tickLive() {
+      tick += 1;
+      regions = regions.map((v) => Math.max(30, Math.min(96, v + (Math.random() * 2 - 1) * 5)));
+      regionEls.forEach((el, i) => { el.style.width = `${regions[i]}%`; });
+      if (blinkEl) blinkEl.style.opacity = tick % 2 ? "1" : "0.3";
+      paintHot();
+    }
+
+    let clockTimer = null;
+    let liveTimer = null;
+
+    function stopTimers() {
+      if (clockTimer !== null) { window.clearInterval(clockTimer); clockTimer = null; }
+      if (liveTimer !== null) { window.clearInterval(liveTimer); liveTimer = null; }
+    }
+
+    function startTimers() {
+      stopTimers();
+      tickClock();
+      clockTimer = window.setInterval(tickClock, 1000);
+      liveTimer = window.setInterval(tickLive, 1200);
+    }
+
+    paintHot();
+    startTimers();
+
+    const onVisibilityChange = () => {
+      if (document.hidden) stopTimers();
+      else startTimers();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    document.addEventListener(
+      "astro:before-swap",
+      () => {
+        stopTimers();
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      },
+      { once: true },
+    );
+  })();
+</script>
+
+<style>
+  .reef-visual__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #dd3636;
+    transition: background 0.3s;
+  }
+
+  .reef-visual__screen {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+  }
+
+  .reef-visual__field {
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px rgba(229, 229, 242, 0.25);
+    transition: opacity 0.4s;
+  }
+
+  .reef-visual__row-grid {
+    display: grid;
+    grid-template-columns: 52px 1.3fr 1fr 40px 8px;
+    gap: 8px;
+    align-items: center;
+    padding: 0 10px;
+  }
+
+  .reef-visual__head {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 6%;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.75);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0;
+    transition: opacity 0.35s;
+  }
+
+  .reef-visual__rec {
+    position: absolute;
+    background: #faf9fe;
+    border-radius: 2px;
+    overflow: hidden;
+    transition-property: left, top, width, height, transform, background, border-radius;
+    transition-duration: 0.8s, 0.8s, 0.8s, 0.8s, 0.8s, 0.4s, 0.6s;
+    transition-timing-function: cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .reef-visual__layer {
+    position: absolute;
+    inset: 0;
+  }
+
+  .reef-visual__slate {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    transition: opacity 0.25s;
+  }
+
+  .reef-visual__slate-line {
+    align-self: flex-start;
+    padding: 0 2px;
+    font-size: 10.5px;
+    line-height: 1.3;
+    color: #333333;
+  }
+
+  .reef-visual__slate-line[data-kind="y"] {
+    background: #f6e0a7;
+  }
+
+  .reef-visual__slate-line[data-kind="e"] {
+    color: #dd3636;
+  }
+
+  .reef-visual__row {
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .reef-visual__mini {
+    padding: 0 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .reef-visual__dash {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 54%;
+    background: var(--color-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--color-primary);
+    opacity: 0;
+    transform: scale(0.92);
+    transform-origin: 50% 100%;
+    transition: opacity 0.45s, transform 0.6s cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .reef-visual__dash-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    transition: opacity 0.3s;
+  }
+
+  .reef-visual__region-track {
+    height: 6px;
+    background: rgba(0, 0, 108, 0.15);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .reef-visual__region-fill {
+    height: 100%;
+    background: var(--color-primary);
+    transition: width 0.8s cubic-bezier(0.65, 0, 0.25, 1);
+  }
+</style>
