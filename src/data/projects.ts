@@ -32,12 +32,54 @@ interface Project {
   copy: Record<Lang, ProjectCopy>;
 }
 
+// Textos en inglés del caso "De Excel a sistema". El español usa los defaults
+// del componente, por eso solo hace falta declarar `en`.
+const excelToSystemProps: CaseStudyConfig['props'] = {
+  en: {
+    eyebrow: 'Case · BIM Industry',
+    titleNormal: 'From an Excel spreadsheet',
+    titleBold: 'to a system that runs the whole operation.',
+    steps: [
+      {
+        title: 'The spreadsheet',
+        text: 'Everything lived in one Excel file: crossed versions, broken formulas and data only the person who entered it understood.',
+      },
+      {
+        title: 'Formalized processes',
+        text: 'We mapped every process, standardized it and turned it into a module with its own rules, owners and data.',
+      },
+      {
+        title: 'Real-time decisions',
+        text: 'Leadership decides with what is happening today, not with what was entered last month.',
+      },
+    ],
+    mods: [
+      { name: 'Projects', sub: 'Intake · Phases · Milestones', value: '14 active' },
+      { name: 'Contracts', sub: 'Templates · Signing · Delivery', value: '8 sent today' },
+      { name: 'Documentation', sub: 'Drawings · Versions · Deliverables', value: '126 drawings' },
+      { name: 'Coordination', sub: 'Clashes · RFIs', value: '3 open RFIs' },
+      { name: 'Resources', sub: 'Hours · Allocation', value: '312 h today' },
+      { name: 'Billing', sub: 'Certifications · Payments', value: '$ 46.3 M' },
+    ],
+    cells: [
+      { text: 'Project', kind: 'h' }, { text: 'Status', kind: 'h' }, { text: 'Hrs', kind: 'h' }, { text: 'Owner', kind: 'h' },
+      { text: 'Tower A', kind: '' }, { text: '¿?', kind: 'y' }, { text: '120', kind: '' }, { text: 'JM', kind: '' },
+      { text: 'Tower_A_v3_FINAL', kind: '' }, { text: 'ok', kind: '' }, { text: '#REF!', kind: 'e' }, { text: '—', kind: '' },
+      { text: 'Ind. building', kind: '' }, { text: 'delayed', kind: 'y' }, { text: '=B4*1.2', kind: '' }, { text: 'MP / JM', kind: '' },
+      { text: 'Rev 07', kind: '' }, { text: 'see email', kind: 'y' }, { text: '98', kind: '' }, { text: '', kind: '' },
+      { text: 'Drawings.xls', kind: '' }, { text: '#N/A', kind: 'e' }, { text: '?', kind: '' }, { text: 'pending', kind: 'y' },
+    ],
+    fileLabels: ['processes_v7_FINAL(2).xlsx', 'system / modules', 'system / dashboard'],
+    statusLabels: ['not synced', 'standardized processes', 'live'],
+  },
+};
+
 export const projects: Project[] = [
   {
     slug: 'bucked-up',
     name: 'Bucked Up',
     logo: '/logos/projects/buckedUp/buckedup_web.webp',
-    caseStudy: { type: 'excel-to-system' },
+    caseStudy: { type: 'excel-to-system', props: excelToSystemProps },
     copy: {
       es: {
         industry: 'E-commerce',
@@ -61,7 +103,7 @@ export const projects: Project[] = [
     slug: 'hexagon',
     name: 'Hexagon Multivista',
     logo: '/logos/projects/hexagon/hexagon_multivista.png',
-    caseStudy: { type: 'excel-to-system' },
+    caseStudy: { type: 'excel-to-system', props: excelToSystemProps },
     copy: {
       es: {
         industry: 'BIM',
