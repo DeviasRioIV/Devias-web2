@@ -5,11 +5,13 @@
 // public.heartbeat() — a real query against Postgres — which resets that clock.
 // It reads no table, so a leak here exposes nothing about `contacts`.
 import type { APIRoute } from "astro";
+import { sendAlertEmail } from "../../lib/alertEmail";
 import { getSupabaseClient, readEnv } from "../../lib/supabase";
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
+
   // Vercel attaches `Authorization: Bearer $CRON_SECRET` to every cron request
   // once CRON_SECRET is set on the project. Without that check the route is a
   // public button anyone can hold down, so treat a mismatch as a 404 — no need
@@ -19,10 +21,24 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response("Not found", { status: 404 });
   }
 
-  const { data, error } = await getSupabaseClient().rpc("heartbeat");
+  let data: unknown;
+  let error: unknown;
+  try {
+    ({ data, error } = await getSupabaseClient().rpc("heartbeat"));
+  } catch (err) {
+    error = err;
+  }
 
   if (error) {
     console.error("[health] heartbeat failed:", error);
+    // A failing keep-alive usually means the project got paused or the env is
+    // wrong; the contact form would be failing too, so tell the team now.
+    await sendAlertEmail(
+      "Falló el heartbeat de Supabase",
+      "El cron diario /api/health no pudo consultar Supabase. Puede que el proyecto esté pausado " +
+        "o que SUPABASE_URL/SUPABASE_KEY estén mal; el formulario de contacto podría estar fallando.\n\n" +
+        `Error: ${JSON.stringify(error, Object.getOwnPropertyNames(Object(error)))}`,
+    );
     return new Response(JSON.stringify({ ok: false, error: "heartbeat" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
