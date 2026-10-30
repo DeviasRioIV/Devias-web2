@@ -79,13 +79,19 @@ const seo = {
 
     <CaseStudy {...project.caseStudy.props?.[lang as 'es' | 'en']} />
 
-    <h2 class="flex flex-col px-2.5 mt-12 md:w-1/2 md:mx-auto md:mt-24">
+    <h2 class="flex flex-col px-2.5 mt-12 md:w-full md:max-w-6xl md:mx-auto md:mt-24">
       {t.projectPage.closingTitle.map((line, i) => (
         <span class={`inline max-w-fit font-roboto text-[32px] mb-1 px-2 ${i === 0 ? 'bg-primary text-white' : 'bg-primary text-secondary font-bold'}`}>{line}</span>
       ))}
     </h2>
 
-    <div class="px-2.5 mt-20 md:mt-24 flex flex-col gap-1.75 md:max-w-6xl md:mx-auto md:w-1/2">
+    <div class="flex flex-col gap-8 px-2.5 pt-10 md:max-w-6xl md:mx-auto">
+      {copy.lastParagraph.map((paragraph) => (
+        <p class="font-roboto-mono text-[20px] text-black">{paragraph}</p>
+      ))}
+    </div>
+
+    <div class="px-2.5 mt-20 md:mt-24 flex flex-col gap-1.75 md:max-w-6xl md:mx-auto md:w-full">
       <a
         href={`${homeUrl}#last-contact-form`}
         class="h-38.5 bg-secondary rounded-lg p-6 flex flex-col justify-between"

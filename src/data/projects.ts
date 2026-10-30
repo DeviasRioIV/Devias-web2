@@ -10,6 +10,7 @@ interface ProjectCopy {
   industry: string;
   region: string;
   description: string[];
+  lastParagraph: string[];
 }
 
 // Qué bloque animado muestra cada proyecto. `type` es una clave del registro
@@ -88,6 +89,7 @@ export const projects: Project[] = [
           'Bucked Up es una marca de suplementos deportivos que necesitaba que su operación digital acompañara el ritmo de su crecimiento.',
           'Ordenamos sus procesos y construimos los sistemas que les permiten decidir con datos en tiempo real.',
         ],
+        lastParagraph: []
       },
       en: {
         industry: 'E-commerce',
@@ -96,6 +98,7 @@ export const projects: Project[] = [
           'Bucked Up is a sports supplements brand that needed its digital operation to keep pace with its growth.',
           'We organized its processes and built the systems that let them decide with real-time data.',
         ],
+        lastParagraph: []
       },
     },
   },
@@ -112,6 +115,7 @@ export const projects: Project[] = [
           'Hexagon Multivista permite a los profesionales de la construcción, arquitectos, ingenieros y propietarios construir un mundo mejor mediante servicios de gestión del ciclo de vida de los activos —de principio a fin— basados ​​en datos.',
           'Hexagon Multivista ofrece la única cartera de servicios tecnológicos integral, sostenible y transparente que incluye documentación visual, creación de activos digitales, transformación BIM y análisis automatizado de la construcción, con el fin de aumentar el retorno de la inversión (ROI), optimizar los flujos de trabajo y mejorar la colaboración.',
         ],
+        lastParagraph: []
       },
       en: {
         industry: 'BIM',
@@ -120,6 +124,7 @@ export const projects: Project[] = [
           'Hexagon Multivista enables construction professionals, architects, engineers and owners to build a better world through data-driven, end-to-end asset lifecycle management services.',
           'Hexagon Multivista offers the only comprehensive, sustainable and transparent portfolio of technology services, including visual documentation, digital asset creation, BIM transformation and automated construction analytics, in order to increase return on investment (ROI), optimize workflows and improve collaboration.',
         ],
+        lastParagraph: []
       },
     },
   },
@@ -178,6 +183,9 @@ export const projects: Project[] = [
           'Reef Check es una organización dedicada a la conservación de los arrecifes de coral, con voluntarios y científicos en todo el mundo.',
           'Construimos los sistemas que centralizan sus datos de campo y les permiten sostener su operación a escala.',
         ],
+        "lastParagraph": [
+          'Desde observaciones de campo individuales hasta datos confiables que respaldan la conservación global de los arrecifes. Devias ayudó a construir la plataforma que recopila, gestiona y administra los datos de los relevamientos de Reef Check. La tecnología adecuada convierte el trabajo de miles de buzos en información que el mundo puede usar y permite que las personas que realizan el trabajo se concentren en lo que importa.'
+        ],
       },
       en: {
         industry: 'Marine conservation',
@@ -185,6 +193,9 @@ export const projects: Project[] = [
         description: [
           'Reef Check is an organization dedicated to coral reef conservation, with volunteers and scientists around the world.',
           'We built the systems that centralize their field data and let them sustain their operation at scale.',
+        ],
+        "lastParagraph": [
+          'From individual field observations to reliable data supporting global reef conservation. Devias helped build the platform that collects, manages and administers Reef Check’s survey data. The right technology turns the work of thousands of divers into information the world can use, and lets the people doing the work focus on what matters.'
         ],
       },
     },
