@@ -122,7 +122,8 @@
     ],
     "humanizing": {
       "title": "Humanizing",
-      "subtitle": "Digital products"
+      "subtitle": "Digital products",
+      "since": "Since 2007"
     }
   },
   "projectPage": {
@@ -140,7 +141,6 @@
       ]
     },
     "social": {
-      "title": "",
       "links": [
         { "label": "Linkedin", "href": "https://www.linkedin.com/company/devias-ar/posts/?feedView=all" },
         { "label": "hola@devias.ar", "href": "mailto:hola@devias.ar" }

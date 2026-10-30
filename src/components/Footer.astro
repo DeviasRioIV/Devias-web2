@@ -1,7 +1,7 @@
 ---
 type footerContent = {
-  aboutUs: {title: string, links: {label: string, href: string}[]};
-  social: {title: string, links: {label: string, href: string}[]};
+  aboutUs: {links: {label: string, href: string}[]};
+  social: {links: {label: string, href: string}[]};
   directions: string[];
 }
 
@@ -17,7 +17,6 @@ const { t } = Astro.props;
     <div>
       <!-- About us -->
       <div class="md:w-fit">
-        <!-- <h4 class="text-white font-roboto-mono text-2xl">{t.aboutUs.title}</h4> -->
     
         <ul class="flex flex-col gap-2.25 mt-2.25">
           {
