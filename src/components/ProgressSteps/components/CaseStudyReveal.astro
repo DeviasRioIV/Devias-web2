@@ -151,11 +151,40 @@ const rootId = `case-study-${crypto.randomUUID()}`;
         const now = Date.now();
         elapsed += now - lastTick;
         lastTick = now;
-        if (elapsed >= duration) {
+        // Mientras el usuario interactúa, no cambiamos de paso: la animación
+        // termina y se queda en el paso actual hasta que suelte el componente.
+        if (elapsed >= duration && !isHeld()) {
           setStage((stage + 1) % stepButtons.length);
         }
       }, 100);
     }
+
+    let hovered = false;
+    let focused = false;
+    const isHeld = () => hovered || focused;
+
+    // Al soltar, damos un margen para no saltar de golpe de paso.
+    const release = () => {
+      if (!isHeld()) {
+        elapsed = Math.min(elapsed, duration - 1500);
+        lastTick = Date.now();
+      }
+    };
+
+    root.addEventListener("mouseenter", () => {
+      hovered = true;
+    });
+    root.addEventListener("mouseleave", () => {
+      hovered = false;
+      release();
+    });
+    root.addEventListener("focusin", () => {
+      focused = root.querySelector(":focus-visible") !== null;
+    });
+    root.addEventListener("focusout", () => {
+      focused = false;
+      release();
+    });
 
     setStage(0);
     startTimer();
