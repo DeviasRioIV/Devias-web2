@@ -125,6 +125,7 @@ const rootId = `case-study-${crypto.randomUUID()}`;
       if (activeFill) {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
+            if (held) return;
             activeFill.style.transitionDuration = `${duration}ms`;
             activeFill.style.width = "100%";
           });
@@ -149,11 +150,15 @@ const rootId = `case-study-${crypto.randomUUID()}`;
       lastTick = Date.now();
       stageTimer = window.setInterval(() => {
         const now = Date.now();
+        // Mientras el usuario interactúa, el tiempo no corre: el paso no
+        // avanza y la barra queda congelada.
+        if (held) {
+          lastTick = now;
+          return;
+        }
         elapsed += now - lastTick;
         lastTick = now;
-        // Mientras el usuario interactúa, no cambiamos de paso: la animación
-        // termina y se queda en el paso actual hasta que suelte el componente.
-        if (elapsed >= duration && !isHeld()) {
+        if (elapsed >= duration) {
           setStage((stage + 1) % stepButtons.length);
         }
       }, 100);
@@ -161,29 +166,50 @@ const rootId = `case-study-${crypto.randomUUID()}`;
 
     let hovered = false;
     let focused = false;
-    const isHeld = () => hovered || focused;
+    let held = false;
 
-    // Al soltar, damos un margen para no saltar de golpe de paso.
-    const release = () => {
-      if (!isHeld()) {
-        elapsed = Math.min(elapsed, duration - 1500);
+    function updateHold() {
+      const next = hovered || focused;
+      if (next === held) return;
+      held = next;
+
+      const fill = stepButtons[stage]?.querySelector("[data-progress-fill]");
+      if (!fill) return;
+
+      if (held) {
+        // Congelar la barra donde está y sincronizar el tiempo transcurrido.
+        const parentWidth = fill.parentElement.getBoundingClientRect().width || 1;
+        const ratio = Math.min(1, fill.getBoundingClientRect().width / parentWidth);
+        elapsed = ratio * duration;
+        fill.style.transitionDuration = "0ms";
+        fill.style.width = `${ratio * 100}%`;
+      } else {
+        // Retomar: la barra completa lo que falta en el tiempo restante.
         lastTick = Date.now();
+        const remaining = Math.max(0, duration - elapsed);
+        requestAnimationFrame(() => {
+          if (held) return;
+          fill.style.transitionDuration = `${remaining}ms`;
+          fill.style.width = "100%";
+        });
       }
-    };
+    }
 
     root.addEventListener("mouseenter", () => {
       hovered = true;
+      updateHold();
     });
     root.addEventListener("mouseleave", () => {
       hovered = false;
-      release();
+      updateHold();
     });
     root.addEventListener("focusin", () => {
       focused = root.querySelector(":focus-visible") !== null;
+      updateHold();
     });
     root.addEventListener("focusout", () => {
       focused = false;
-      release();
+      updateHold();
     });
 
     setStage(0);
