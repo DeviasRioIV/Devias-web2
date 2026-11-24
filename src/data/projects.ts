@@ -86,19 +86,23 @@ export const projects: Project[] = [
         industry: 'E-commerce',
         region: 'Estados Unidos',
         description: [
-          'Bucked Up es una marca de suplementos deportivos que necesitaba que su operación digital acompañara el ritmo de su crecimiento.',
-          'Ordenamos sus procesos y construimos los sistemas que les permiten decidir con datos en tiempo real.',
+          'Bucked Up es una marca de nutrición de alto rendimiento y estilo de vida fundada en Utah en 2016 por los hermanos gemelos Ryan y Jeff Gardner. Sus suplementos, bebidas energéticas, indumentaria y accesorios se venden en grandes cadenas de Estados Unidos, como Walmart, Amazon, GNC y Vitamin Shoppe. En 2024 la marca anunció su distribución en más de 30 países, con tiendas online dedicadas para Canadá, México, Australia y el Reino Unido.',
         ],
-        lastParagraph: []
+        lastParagraph: [
+          'Lo que empezó como la construcción de la tienda online se convirtió en una alianza que abarca todo el negocio.',
+          'Hoy nuestro trabajo define cómo Bucked Up apoya a sus embajadores, organiza su evento Bootcamp, llega a sus clientes en el celular y pone la IA a trabajar para su equipo. A medida que la marca sigue creciendo, crecemos con ella y proponemos lo que viene en lugar de esperar a que nos lo pidan.',
+        ]
       },
       en: {
         industry: 'E-commerce',
         region: 'United States',
         description: [
-          'Bucked Up is a sports supplements brand that needed its digital operation to keep pace with its growth.',
-          'We organized its processes and built the systems that let them decide with real-time data.',
+          'Bucked Up is a performance nutrition and lifestyle brand founded in Utah in 2016 by twin brothers Ryan and Jeff Gardner. Its supplements, energy drinks, apparel and accessories are sold through major U.S. retailers, including Walmart, Amazon, GNC and Vitamin Shoppe. In 2024 the brand announced distribution in more than 30 countries, with dedicated online stores for Canada, Mexico, Australia and the United Kingdom.',
         ],
-        lastParagraph: []
+        lastParagraph: [
+          'What began as building the storefront has grown into a partnership across the whole business.',
+          'Today our work shapes how Bucked Up supports its ambassadors, runs its Bootcamp event, reaches customers on mobile and puts AI to work for its team. As the brand keeps growing, we keep growing with it, proposing what comes next instead of waiting to be asked.',
+        ]
       },
     },
   },
