@@ -10,6 +10,9 @@ interface ProjectCopy {
   industry: string;
   region: string;
   description: string[];
+  // Cada línea es un renglón del título de cierre: la primera va en blanco y
+  // las demás en verde y negrita.
+  closingTitle: string[];
   lastParagraph: string[];
 }
 
@@ -135,6 +138,7 @@ export const projects: Project[] = [
       es: {
         industry: 'E-commerce',
         region: 'Estados Unidos',
+        closingTitle: ['De una sola tarea', 'a una alianza sólida'],
         description: [
           'Bucked Up es una marca de nutrición de alto rendimiento y estilo de vida fundada en Utah en 2016 por los hermanos gemelos Ryan y Jeff Gardner. Sus suplementos, bebidas energéticas, indumentaria y accesorios se venden en grandes cadenas de Estados Unidos, como Walmart, Amazon, GNC y Vitamin Shoppe. En 2024 la marca anunció su distribución en más de 30 países, con tiendas online dedicadas para Canadá, México, Australia y el Reino Unido.',
         ],
@@ -146,6 +150,7 @@ export const projects: Project[] = [
       en: {
         industry: 'E-commerce',
         region: 'United States',
+        closingTitle: ['From a single task', 'to a solid partnership'],
         description: [
           'Bucked Up is a performance nutrition and lifestyle brand founded in Utah in 2016 by twin brothers Ryan and Jeff Gardner. Its supplements, energy drinks, apparel and accessories are sold through major U.S. retailers, including Walmart, Amazon, GNC and Vitamin Shoppe. In 2024 the brand announced distribution in more than 30 countries, with dedicated online stores for Canada, Mexico, Australia and the United Kingdom.',
         ],
@@ -165,20 +170,22 @@ export const projects: Project[] = [
       es: {
         industry: 'BIM',
         region: 'Multinacional',
+        closingTitle: ['Una operación que escala', 'y un sistema que', 'la acompaña.'],
         description: [
           'Hexagon Multivista permite a los profesionales de la construcción, arquitectos, ingenieros y propietarios construir un mundo mejor mediante servicios de gestión del ciclo de vida de los activos —de principio a fin— basados ​​en datos.',
           'Hexagon Multivista ofrece la única cartera de servicios tecnológicos integral, sostenible y transparente que incluye documentación visual, creación de activos digitales, transformación BIM y análisis automatizado de la construcción, con el fin de aumentar el retorno de la inversión (ROI), optimizar los flujos de trabajo y mejorar la colaboración.',
         ],
-        lastParagraph: []
+        lastParagraph: ['Mediante la estandarización y automatización de procesos internos, desarrollamos un sistema que acompaña el gran crecimiento de Hexagon Multivista desde hace más de 5 años.']
       },
       en: {
         industry: 'BIM',
         region: 'Multinational',
+        closingTitle: ['An operation that scales', 'and a system that', 'keeps up.'],
         description: [
           'Hexagon Multivista enables construction professionals, architects, engineers and owners to build a better world through data-driven, end-to-end asset lifecycle management services.',
           'Hexagon Multivista offers the only comprehensive, sustainable and transparent portfolio of technology services, including visual documentation, digital asset creation, BIM transformation and automated construction analytics, in order to increase return on investment (ROI), optimize workflows and improve collaboration.',
         ],
-        lastParagraph: []
+        lastParagraph: ['By standardizing and automating internal processes, we developed a system that has kept pace with Hexagon Multivista’s strong growth for more than 5 years.']
       },
     },
   },
@@ -233,6 +240,7 @@ export const projects: Project[] = [
       es: {
         industry: 'Conservación marina',
         region: 'Global',
+        closingTitle: ['Miles de buzos.', 'Un registro consistente.'],
         description: [
           'Reef Check es una organización dedicada a la conservación de los arrecifes de coral, con voluntarios y científicos en todo el mundo.',
           'Construimos los sistemas que centralizan sus datos de campo y les permiten sostener su operación a escala.',
@@ -244,6 +252,7 @@ export const projects: Project[] = [
       en: {
         industry: 'Marine conservation',
         region: 'Global',
+        closingTitle: ['Thousands of divers.', 'One consistent record.'],
         description: [
           'Reef Check is an organization dedicated to coral reef conservation, with volunteers and scientists around the world.',
           'We built the systems that centralize their field data and let them sustain their operation at scale.',

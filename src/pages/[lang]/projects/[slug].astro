@@ -82,7 +82,7 @@ const seo = {
     <CaseStudy {...project.caseStudy.props?.[lang as 'es' | 'en']} />
 
     <h2 class="flex flex-col px-2.5 mt-12 md:w-full md:max-w-6xl md:mx-auto md:mt-24">
-      {t.projectPage.closingTitle.map((line, i) => (
+      {copy.closingTitle.map((line, i) => (
         <span class={`inline max-w-fit font-roboto text-[32px] mb-1 px-2 ${i === 0 ? 'bg-primary text-white' : 'bg-primary text-secondary font-bold'}`}>{line}</span>
       ))}
     </h2>
