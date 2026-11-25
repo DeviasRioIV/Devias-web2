@@ -188,6 +188,10 @@ export function createBlobField(canvas: HTMLCanvasElement, stage: HTMLElement): 
     img = ctx.createImageData(w, h);
     out = new Uint32Array(img.data.buffer);
     out.fill(BG_PACKED);
+    // Con `alpha: false` un canvas recien (re)dimensionado se ve negro hasta el
+    // primer putImageData, y el loop solo arranca cuando el bloque entra en
+    // pantalla: se pinta el fondo blanco ya mismo para evitar ese flash negro.
+    ctx.putImageData(img, 0, 0);
     if (xLut.length < N_BLOBS * w) xLut = new Float32Array(N_BLOBS * w);
     if (yLut.length < N_BLOBS * h) yLut = new Float32Array(N_BLOBS * h);
     if (fieldRow.length < w) {
