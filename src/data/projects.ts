@@ -18,7 +18,7 @@ interface ProjectCopy {
 // (eyebrow, títulos, pasos…) que se pasan tal cual al componente y pisan sus
 // defaults. Si falta un idioma, el componente usa sus textos por defecto.
 // Es JSON puro, así que se puede guardar en una DB.
-export type CaseStudyType = 'excel-to-system' | 'reef-check';
+export type CaseStudyType = 'excel-to-system' | 'reef-check' | 'bucked-up';
 
 interface CaseStudyConfig {
   type: CaseStudyType;
@@ -80,7 +80,57 @@ export const projects: Project[] = [
     slug: 'bucked-up',
     name: 'Bucked Up',
     logo: '/logos/projects/buckedUp/buckedup_web.webp',
-    caseStudy: { type: 'excel-to-system', props: excelToSystemProps },
+    caseStudy: {
+      type: 'bucked-up',
+      // El inglés usa los defaults del componente; solo se declara el español.
+      props: {
+        es: {
+          eyebrow: 'Caso · Nutrición deportiva / E-commerce',
+          titleNormal: 'Empezamos con la tienda online.',
+          titleBold: 'Hoy somos socios en todo el negocio.',
+          steps: [
+            {
+              title: 'Empezamos por la tienda',
+              text: 'Bucked Up estaba convirtiendo un sitio de contenido en una tienda online real. Entramos para construir lo que los clientes ven y compran, trabajando sobre los sistemas que ya tenían.',
+            },
+            {
+              title: 'Proponer, no solo entregar',
+              text: 'Nuestro rol creció junto con la marca. Construimos una app donde los embajadores acceden al contenido de la marca, aprenden a vender y gestionan sus ventas y cupones. Para el Bootcamp, el evento abierto de entrenamiento y nutrición que la marca realiza algunas veces al año, propusimos y llevamos adelante una reestructura y un rediseño completos.',
+            },
+            {
+              title: 'De punta a punta, y parte de las decisiones',
+              text: 'Hoy estamos presentes en el producto de punta a punta, desde lo que ven los clientes hasta los sistemas que lo sostienen. Llevamos mejoras de negocio a la mesa en lugar de esperar pedidos, construimos la app de compras móvil y ayudamos a crear los asistentes de IA que el equipo usa a diario.',
+            },
+          ],
+          visual: {
+            stages: [
+              { file: 'buckedup.com', status: 'solo la tienda' },
+              { file: 'ecosistema / nuevos productos', status: 'un rol que crece' },
+              { file: 'ecosistema / hoy', status: 'de punta a punta' },
+            ],
+            tags: ['sitio de contenido', 'tienda online', 'tienda online'],
+            tiles: [
+              { num: '02', name: 'App de embajadores', sub: 'Contenido · Capacitación · Ventas · Cupones' },
+              { num: '03', name: 'Bootcamp', sub: 'Reestructura y rediseño que propusimos' },
+              { num: '04', name: 'Asistentes de IA', sub: 'Usados por todo el equipo' },
+              { num: '05', name: 'App de compras', sub: 'Comprá desde el celular' },
+            ],
+            scopeLabel: 'Nuestro rol',
+            scopeSegments: ['Lo que ven los clientes', 'Propuestas de negocio', 'Sistemas detrás'],
+            feedLabel: 'ECOSISTEMA · EN VIVO',
+            events: [
+              'Pedido realizado · tienda online',
+              'Cupón canjeado · app de embajadores',
+              'Pedido realizado · app de compras',
+              'Módulo de capacitación completado · app de embajadores',
+              'Tarea de asistente completada · equipo',
+              'Inscripción abierta · Bootcamp',
+            ],
+            ariaLabel: 'Animación: un sitio de contenido se convierte en tienda online, crecen nuevos productos a su alrededor y el rol de Devias pasa de la tienda a las propuestas de negocio y los sistemas detrás.',
+          },
+        },
+      },
+    },
     copy: {
       es: {
         industry: 'E-commerce',

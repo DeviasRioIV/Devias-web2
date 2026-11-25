@@ -1,0 +1,612 @@
+---
+// Visualizacion animada de Bucked Up: sitio de contenido -> tienda online ->
+// ecosistema (app de embajadores, Bootcamp, asistentes de IA, app de compras)
+// con el alcance del rol de Devias creciendo. Pensada para ir dentro del
+// `<slot />` de <CaseStudyReveal>: no dibuja pasos ni titulo, solo escucha el
+// evento `casestudy:stagechange` del ancestro `[data-case-study]` y se anima
+// segun el `stage` recibido. Todos los textos entran por props (con los del
+// caso real como default), asi el contenido puede venir de `data/projects.ts`.
+interface Stage {
+  file: string;
+  status: string;
+}
+
+interface Tile {
+  num: string;
+  name: string;
+  sub: string;
+}
+
+interface Props {
+  stages?: [Stage, Stage, Stage];
+  /** Etiqueta de la barra del navegador en cada etapa (la 2 y la 3 suelen ser iguales). */
+  tags?: [string, string, string];
+  url?: string;
+  tiles?: [Tile, Tile, Tile, Tile];
+  scopeLabel?: string;
+  scopeSegments?: [string, string, string];
+  feedLabel?: string;
+  events?: string[];
+  ariaLabel?: string;
+  class?: string;
+}
+
+const {
+  stages = [
+    { file: "buckedup.com", status: "storefront only" },
+    { file: "ecosystem / new products", status: "a growing role" },
+    { file: "ecosystem / today", status: "end to end" },
+  ],
+  tags = ["content site", "online store", "online store"],
+  url = "buckedup.com",
+  tiles = [
+    { num: "02", name: "Ambassador app", sub: "Content · Training · Sales · Coupons" },
+    { num: "03", name: "Bootcamp", sub: "Restructure & redesign we proposed" },
+    { num: "04", name: "AI assistants", sub: "Used by the whole team" },
+    { num: "05", name: "Shopping app", sub: "Buy from the phone" },
+  ],
+  scopeLabel = "Our role",
+  scopeSegments = ["What customers see", "Business proposals", "Systems behind it"],
+  feedLabel = "ECOSYSTEM · LIVE",
+  events = [
+    "Order placed · storefront",
+    "Coupon redeemed · ambassador app",
+    "Order placed · shopping app",
+    "Training module completed · ambassador app",
+    "Assistant task completed · team",
+    "Registration open · Bootcamp",
+  ],
+  ariaLabel = "Animation: a content site becomes an online store, new products grow around it, and Devias's role widens from the storefront to business proposals and the systems behind it.",
+  class: className = "",
+} = Astro.props as Props;
+
+// Geometria de cada etapa, en % del escenario: [left, top, width, height].
+type Rect = [number, number, number, number];
+const TILE_RECTS: (Rect | null)[][] = [
+  [null, [0, 43, 48.75, 41], [0, 37, 31.5, 26]],
+  [null, [51.25, 43, 48.75, 41], [34.25, 37, 31.5, 26]],
+  [null, null, [68.5, 37, 31.5, 26]],
+  [null, null, [64.5, 0, 35.5, 34]],
+];
+const STORE_RECTS: Rect[] = [[0, 0, 100, 84], [0, 0, 100, 40], [0, 0, 62, 34]];
+const BLOG: Rect[] = [[4, 6, 92, 34], [4, 46, 64, 7], [4, 57, 88, 4], [4, 64, 80, 4], [4, 71, 85, 4], [4, 78, 56, 4]];
+const GRID: Rect[] = [0, 1, 2, 3, 4, 5].map((i) => {
+  const w = (92 - 6) / 3;
+  const h = 41;
+  return [4 + (i % 3) * (w + 3), 6 + Math.floor(i / 3) * (h + 5), w, h];
+});
+const FILLED = [1, 2, 3];
+const BLOG_BG = ["#E5E5F2", "#00006C", "#C6C6D9", "#C6C6D9", "#C6C6D9", "#C6C6D9"];
+
+const pct = (v: number) => `${v.toFixed(3)}%`;
+const place = (r: Rect) => `left:${pct(r[0])};top:${pct(r[1])};width:${pct(r[2])};height:${pct(r[3])};`;
+
+const config = { TILE_RECTS, STORE_RECTS, BLOG, GRID, FILLED, BLOG_BG };
+const rootId = `bucked-up-visual-${crypto.randomUUID()}`;
+---
+
+<div
+  id={rootId}
+  class={`bu-visual flex flex-col gap-3 w-full ${className}`.trim()}
+  data-config={JSON.stringify(config)}
+  data-stages={JSON.stringify(stages)}
+  data-tags={JSON.stringify(tags)}
+  data-events={JSON.stringify(events)}
+  data-scope-total={scopeSegments.length}
+>
+  <div class="flex justify-between items-center gap-3 font-roboto-mono text-xs text-white/75">
+    <span data-file-label>{stages[0].file}</span>
+    <span class="flex gap-1.5 items-center whitespace-nowrap">
+      <span class="bu-visual__dot" data-dot></span>
+      <span data-status-label>{stages[0].status}</span>
+    </span>
+  </div>
+
+  <div class="bu-visual__stage" role="img" aria-label={ariaLabel}>
+    <div class="bu-visual__store" data-store style={place(STORE_RECTS[0])}>
+      <div class="bu-visual__bar">
+        <span class="bu-visual__dots"><i></i><i></i><i></i></span>
+        <span class="bu-visual__url font-roboto-mono">{url}</span>
+        <span class="bu-visual__tag font-roboto-mono" data-tag>{tags[0]}</span>
+      </div>
+      <div class="bu-visual__body">
+        {
+          BLOG.map((r, i) => (
+            <div class="bu-visual__blk" data-blk={i} style={`${place(r)}background:${BLOG_BG[i]};border-radius:1px;`}>
+              <div class="bu-visual__prod" data-prod>
+                <div class="bu-visual__img"></div>
+                <div class="bu-visual__meta">
+                  <div class="bu-visual__l1"></div>
+                  <div class="bu-visual__l2">
+                    <div class="bu-visual__price"></div>
+                    <div class="bu-visual__add"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    {
+      tiles.map((t, i) => {
+        const first = TILE_RECTS[i].find((r) => r) as Rect;
+        return (
+          <div class="bu-visual__tile" data-tile={i} style={`${place(first)}opacity:0;transform:scale(.9);`}>
+            <span class="bu-visual__tile-n font-roboto-mono">{t.num}</span>
+            <div class="flex flex-col gap-1.5 min-w-0">
+              <b class="font-roboto">{t.name}</b>
+              <small class="font-roboto-mono">{t.sub}</small>
+            </div>
+          </div>
+        );
+      })
+    }
+
+    <div class="bu-visual__scope">
+      <div class="bu-visual__scope-head font-roboto-mono">
+        <span>{scopeLabel}</span>
+        <span data-scope-count>{FILLED[0]} / {scopeSegments.length}</span>
+      </div>
+      <div class="bu-visual__segs">
+        {
+          scopeSegments.map((label, i) => (
+            <div class="flex flex-col gap-1.5 min-w-0">
+              <div class="bu-visual__seg-bar">
+                <i data-seg-fill style={i < FILLED[0] ? "width:100%" : ""}></i>
+              </div>
+              <span class="bu-visual__seg-label font-roboto-mono" data-seg-label style={i < FILLED[0] ? "color:#fff" : ""}>{label}</span>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="bu-visual__feed" data-feed>
+      <div class="flex justify-between items-center font-roboto-mono text-[10.5px] tabular-nums">
+        <span class="flex gap-1.5 items-center">
+          <i class="bu-visual__blink" data-blink></i>{feedLabel}
+        </span>
+        <span data-clock>00:00:00</span>
+      </div>
+      <strong class="font-roboto" data-event>{events[0]}</strong>
+    </div>
+  </div>
+</div>
+
+<script is:inline define:vars={{ rootId }}>
+  (() => {
+    const root = document.getElementById(rootId);
+    if (!root) return;
+
+    const host = root.closest("[data-case-study]");
+
+    const CFG = JSON.parse(root.getAttribute("data-config") || "{}");
+    const STAGES = JSON.parse(root.getAttribute("data-stages") || "[]");
+    const TAGS = JSON.parse(root.getAttribute("data-tags") || "[]");
+    const EVENTS = JSON.parse(root.getAttribute("data-events") || "[]");
+    const TOTAL = Number(root.getAttribute("data-scope-total")) || 3;
+    const DOT_COLORS = ["#DD3636", "#EDC14F", "#00C800"];
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pct = (v) => `${v.toFixed(3)}%`;
+    const place = (el, r) => {
+      el.style.left = pct(r[0]);
+      el.style.top = pct(r[1]);
+      el.style.width = pct(r[2]);
+      el.style.height = pct(r[3]);
+    };
+
+    const $ = (sel) => root.querySelector(sel);
+    const storeEl = $("[data-store]");
+    const tagEl = $("[data-tag]");
+    const blkEls = Array.from(root.querySelectorAll("[data-blk]"));
+    const tileEls = Array.from(root.querySelectorAll("[data-tile]"));
+    const segFills = Array.from(root.querySelectorAll("[data-seg-fill]"));
+    const segLabels = Array.from(root.querySelectorAll("[data-seg-label]"));
+    const scopeCountEl = $("[data-scope-count]");
+    const feedEl = $("[data-feed]");
+    const fileLabelEl = $("[data-file-label]");
+    const statusLabelEl = $("[data-status-label]");
+    const dotEl = $("[data-dot]");
+    const clockEl = $("[data-clock]");
+    const blinkEl = $("[data-blink]");
+    const eventEl = $("[data-event]");
+
+    let stage = 0;
+    let tick = 0;
+    let isStore = null;
+    let storeTimer = null;
+
+    // El sitio de contenido se convierte en tienda: en la etapa 0 pasa un rato
+    // como blog y recien despues se acomoda como grilla de productos.
+    function renderStore(asStore) {
+      if (asStore === isStore) return;
+      isStore = asStore;
+      if (tagEl) tagEl.textContent = (asStore ? TAGS[Math.max(1, stage)] : TAGS[0]) ?? "";
+      blkEls.forEach((b, i) => {
+        place(b, asStore ? CFG.GRID[i] : CFG.BLOG[i]);
+        const d = reduceMotion ? "0ms" : `${i * 50}ms`;
+        // Orden de transition-property: left, top, width, height, background, border-radius.
+        b.style.transitionDelay = `${d}, ${d}, ${d}, ${d}, 0ms, 0ms`;
+        b.style.background = asStore ? "#FAF9FE" : CFG.BLOG_BG[i];
+        b.style.borderRadius = asStore ? "4px" : "1px";
+        const prod = b.querySelector("[data-prod]");
+        if (prod) {
+          prod.style.opacity = asStore ? "1" : "0";
+          prod.style.transitionDelay = asStore && !reduceMotion ? "450ms" : "0ms";
+        }
+      });
+    }
+
+    function applyStage(newStage) {
+      stage = newStage;
+      const d = (ms) => (reduceMotion ? "0ms" : ms);
+
+      if (storeTimer !== null) { window.clearTimeout(storeTimer); storeTimer = null; }
+
+      const st = STAGES[stage] || {};
+      if (fileLabelEl) fileLabelEl.textContent = st.file ?? "";
+      if (statusLabelEl) statusLabelEl.textContent = st.status ?? "";
+      if (dotEl) dotEl.style.background = DOT_COLORS[stage] ?? DOT_COLORS[0];
+
+      if (storeEl) place(storeEl, CFG.STORE_RECTS[stage]);
+
+      tileEls.forEach((el, i) => {
+        const rects = CFG.TILE_RECTS[i];
+        let r = rects[stage];
+        const on = !!r;
+        if (!r) r = rects.find((x) => x);
+        place(el, r);
+        el.style.opacity = on ? "1" : "0";
+        el.style.transform = `scale(${on ? 1 : 0.9})`;
+        const dl = on ? d(`${500 + i * 120}ms`) : "0ms";
+        // Orden: left, top, width, height, opacity, transform.
+        el.style.transitionDelay = `0ms, 0ms, 0ms, 0ms, ${dl}, ${dl}`;
+      });
+
+      const filled = CFG.FILLED[stage];
+      if (scopeCountEl) scopeCountEl.textContent = `${filled} / ${TOTAL}`;
+      segFills.forEach((fill, i) => {
+        const on = i < filled;
+        const dl = on ? d(`${300 + i * 150}ms`) : "0ms";
+        fill.style.width = on ? "100%" : "0%";
+        fill.style.transitionDelay = dl;
+        const label = segLabels[i];
+        if (label) {
+          label.style.color = on ? "#FFFFFF" : "rgba(255,255,255,.5)";
+          label.style.transitionDelay = dl;
+        }
+      });
+
+      if (feedEl) {
+        feedEl.style.opacity = stage === 2 ? "1" : "0";
+        feedEl.style.transform = stage === 2 ? "scale(1)" : "scale(.92)";
+        feedEl.style.transitionDelay = stage === 2 ? d("900ms") : "0ms";
+      }
+
+      isStore = null;
+      if (stage > 0) {
+        renderStore(true);
+      } else {
+        renderStore(false);
+        storeTimer = window.setTimeout(() => renderStore(true), reduceMotion ? 0 : 1600);
+      }
+    }
+
+    if (host) {
+      host.addEventListener("casestudy:stagechange", (e) => applyStage(e.detail.stage));
+    }
+
+    function tickClock() {
+      const now = new Date();
+      const z = (v) => String(v).padStart(2, "0");
+      if (clockEl) clockEl.textContent = `${z(now.getHours())}:${z(now.getMinutes())}:${z(now.getSeconds())}`;
+    }
+
+    // "Ecosistema en vivo": rota el ultimo evento y hace parpadear el indicador.
+    function tickLive() {
+      tick += 1;
+      if (eventEl && EVENTS.length) eventEl.textContent = EVENTS[tick % EVENTS.length];
+      if (blinkEl) blinkEl.style.opacity = tick % 2 ? "1" : "0.3";
+      tickClock();
+    }
+
+    let liveTimer = null;
+
+    function stopTimers() {
+      if (liveTimer !== null) { window.clearInterval(liveTimer); liveTimer = null; }
+      if (storeTimer !== null) { window.clearTimeout(storeTimer); storeTimer = null; }
+    }
+
+    function startTimers() {
+      stopTimers();
+      tickClock();
+      liveTimer = window.setInterval(tickLive, 1200);
+    }
+
+    startTimers();
+
+    const onVisibilityChange = () => {
+      if (document.hidden) stopTimers();
+      else startTimers();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    document.addEventListener(
+      "astro:before-swap",
+      () => {
+        stopTimers();
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      },
+      { once: true },
+    );
+  })();
+</script>
+
+<style>
+  .bu-visual__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex: none;
+    background: #dd3636;
+    transition: background 0.3s;
+  }
+
+  .bu-visual__stage {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 4 / 5;
+  }
+
+  .bu-visual__store {
+    position: absolute;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: left 0.8s cubic-bezier(0.65, 0, 0.25, 1), top 0.8s cubic-bezier(0.65, 0, 0.25, 1),
+      width 0.8s cubic-bezier(0.65, 0, 0.25, 1), height 0.8s cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .bu-visual__bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    height: 30px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #e5e5f2;
+  }
+
+  .bu-visual__dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .bu-visual__dots i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #c6c6d9;
+  }
+
+  .bu-visual__url {
+    flex: 1;
+    min-width: 0;
+    font-size: 10px;
+    color: #68688a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bu-visual__tag {
+    font-size: 10px;
+    color: var(--color-primary);
+    white-space: nowrap;
+  }
+
+  .bu-visual__body {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 30px;
+    bottom: 0;
+  }
+
+  .bu-visual__blk {
+    position: absolute;
+    overflow: hidden;
+    transition: left 0.7s cubic-bezier(0.65, 0, 0.25, 1), top 0.7s cubic-bezier(0.65, 0, 0.25, 1),
+      width 0.7s cubic-bezier(0.65, 0, 0.25, 1), height 0.7s cubic-bezier(0.65, 0, 0.25, 1), background 0.4s,
+      border-radius 0.5s;
+  }
+
+  .bu-visual__prod {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .bu-visual__img {
+    flex: 1;
+    background: #e5e5f2;
+  }
+
+  .bu-visual__meta {
+    padding: 5px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .bu-visual__l1 {
+    height: 4px;
+    width: 70%;
+    background: #c6c6d9;
+    border-radius: 1px;
+  }
+
+  .bu-visual__l2 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bu-visual__price {
+    height: 4px;
+    width: 30%;
+    background: var(--color-primary);
+    border-radius: 1px;
+  }
+
+  .bu-visual__add {
+    width: 14px;
+    height: 8px;
+    background: var(--color-secondary);
+    border-radius: 66px;
+  }
+
+  .bu-visual__tile {
+    position: absolute;
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 12px;
+    overflow: hidden;
+    transition: left 0.8s cubic-bezier(0.65, 0, 0.25, 1), top 0.8s cubic-bezier(0.65, 0, 0.25, 1),
+      width 0.8s cubic-bezier(0.65, 0, 0.25, 1), height 0.8s cubic-bezier(0.65, 0, 0.25, 1), opacity 0.4s,
+      transform 0.5s cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .bu-visual__tile-n {
+    font-size: 11px;
+    color: #008a00;
+  }
+
+  .bu-visual__tile b {
+    font-size: 15px;
+    line-height: 1.1;
+    color: var(--color-primary);
+  }
+
+  .bu-visual__tile small {
+    font-size: 10.5px;
+    line-height: 1.3;
+    color: #666666;
+  }
+
+  .bu-visual__scope {
+    position: absolute;
+    left: 0;
+    top: 87%;
+    width: 100%;
+    height: 13%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .bu-visual__scope-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .bu-visual__scope-head span:last-child {
+    color: var(--color-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bu-visual__segs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .bu-visual__seg-bar {
+    position: relative;
+    height: 6px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+  }
+
+  .bu-visual__seg-bar i {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background: var(--color-secondary);
+    transition: width 0.7s cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .bu-visual__seg-label {
+    font-size: 10px;
+    line-height: 1.25;
+    color: rgba(255, 255, 255, 0.5);
+    transition: color 0.4s;
+  }
+
+  .bu-visual__feed {
+    position: absolute;
+    left: 0;
+    top: 66%;
+    width: 100%;
+    height: 17%;
+    background: var(--color-secondary);
+    color: var(--color-primary);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    opacity: 0;
+    transform: scale(0.92);
+    transform-origin: 50% 100%;
+    transition: opacity 0.45s, transform 0.6s cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .bu-visual__feed strong {
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bu-visual__blink {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    transition: opacity 0.3s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bu-visual * {
+      transition: none !important;
+    }
+  }
+</style>

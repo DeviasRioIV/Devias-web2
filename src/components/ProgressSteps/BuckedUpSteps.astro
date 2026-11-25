@@ -1,0 +1,51 @@
+---
+// Preset del caso Bucked Up: compone el shell generico <CaseStudyReveal>
+// (eyebrow + titulo + pasos + autoplay) con <BuckedUpVisual>. Los textos
+// default son los del caso real; todo se puede pisar por props.
+import CaseStudyReveal from "./components/CaseStudyReveal.astro";
+import BuckedUpVisual from "./components/BuckedUpVisual.astro";
+
+interface Step {
+  title: string;
+  text: string;
+}
+
+interface Props {
+  eyebrow?: string;
+  titleNormal?: string;
+  titleBold?: string;
+  steps?: Step[];
+  visual?: Record<string, unknown>;
+  autoplay?: boolean;
+  duration?: number;
+  class?: string;
+}
+
+const {
+  eyebrow = "Case · Performance Nutrition / E-commerce",
+  titleNormal = "We started with the storefront.",
+  titleBold = "Today we’re a partner across the whole business.",
+  steps = [
+    {
+      title: "Starting with the storefront",
+      text: "Bucked Up was turning a content site into a real online store. We came in to build what customers see and buy from, working on top of the systems they already had.",
+    },
+    {
+      title: "Proposing, not just delivering",
+      text: "Our role grew with the brand. We built an app where ambassadors access brand content, learn to sell and manage their sales and coupons. For the Bootcamp, the brand’s open training and nutrition event held a few times a year, we proposed and carried out a full restructure and redesign.",
+    },
+    {
+      title: "End to end, and part of the decisions",
+      text: "Today we are present on the product end to end, from what customers see to the systems behind it. We bring business improvements to the table instead of waiting for requests, built the mobile shopping app and help build the AI assistants the team uses daily.",
+    },
+  ],
+  visual = {},
+  autoplay = true,
+  duration = 5000,
+  class: className = "",
+} = Astro.props as Props;
+---
+
+<CaseStudyReveal eyebrow={eyebrow} titleNormal={titleNormal} titleBold={titleBold} steps={steps} autoplay={autoplay} duration={duration} class={className}>
+  <BuckedUpVisual {...visual} />
+</CaseStudyReveal>

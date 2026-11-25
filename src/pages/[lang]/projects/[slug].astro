@@ -3,6 +3,7 @@ import Layout from '../../../layouts/Layout.astro';
 import Footer from '../../../components/Footer.astro';
 import ProgressSteps from '../../../components/ProgressSteps/ProgressSteps.astro';
 import ReefCheckSteps from '../../../components/ProgressSteps/ReefCheckSteps.astro';
+import BuckedUpSteps from '../../../components/ProgressSteps/BuckedUpSteps.astro';
 import { ArrowRight } from '@lucide/astro';
 import { getTranslations } from '../../../i18n/utils';
 import { projects, getProject, type CaseStudyType } from '../../../data/projects';
@@ -12,6 +13,7 @@ import { projects, getProject, type CaseStudyType } from '../../../data/projects
 const caseStudies: Record<CaseStudyType, any> = {
   'excel-to-system': ProgressSteps,
   'reef-check': ReefCheckSteps,
+  'bucked-up': BuckedUpSteps,
 };
 
 export function getStaticPaths() {
